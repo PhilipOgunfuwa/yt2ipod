@@ -13,6 +13,7 @@ Track::Track(const gchar *strTitle,
              const gchar *strAlbum,
              const gchar *strGenre,
              const gchar *strIpodPath,
+             gint32 dTrackLen_ms,
              guint32 dID,
              gboolean bTransferred)
     : m_strTitle { "" }
@@ -20,6 +21,7 @@ Track::Track(const gchar *strTitle,
     , m_strAlbum { "" }
     , m_strGenre { "" }
     , m_strIpodPath { "" }
+    , m_dTrackLen_ms { dTrackLen_ms }
     , m_dID { dID }
     , m_bTransferred { bTransferred }
 {
@@ -122,6 +124,7 @@ std::vector<Track> get_tracks(Itdb_iTunesDB *pDB) {
             pCurTrack->album,
             pCurTrack->genre,
             pCurTrack->ipod_path,
+            pCurTrack->tracklen,
             pCurTrack->id,
             FALSE, // Track doesn't need added to iTunesDB
         };
@@ -167,10 +170,28 @@ Itdb_Track *add_new_track(
     pTrack->genre = g_strdup(newTrack.m_strGenre.c_str());
 
 
-    // Copy song to ipod and then add track to ipod 
+    // Add track to iTunesDB, and then update track to be linked to song and copy to iPod
     itdb_track_add(pDB, pTrack, END_OF_ITUNESDB);
-    itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), pError); 
 
+    // Add track+song file to 
+    {
+        gboolean bSuccess { itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), pError) }; 
+
+        // Update length of track (in ms)
+        if (bSuccess) {
+            drmp3 song;
+            drmp3_init_file(&song, strSrcSongPath.c_str(), nullptr);
+            drmp3_uint64 dSongFrameCount { drmp3_get_pcm_frame_count(&song) }; // frame
+            drmp3_uint32 dSongBitRate { song.sampleRate }; // in seconds
+
+            // Size of song is frame count / bit rate
+            pTrack->tracklen = static_cast<gint32>(
+                (dSongFrameCount / dSongBitRate) * 1000
+            );
+
+            drmp3_uninit(&song);
+        }
+    }
 
     // Add track to target playlist
     Itdb_Playlist *pTargetPlaylist { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
