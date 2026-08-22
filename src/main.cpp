@@ -3,6 +3,10 @@
 #include "include/yt2ipod.h"
 #include <iostream>
 
+// For MP3s
+#define DR_MP3_IMPLEMENTATION
+#include "include/dr_mp3.h"
+
 int main(int argc, char** argv) {
 
     if (argc != 2) {
@@ -25,9 +29,8 @@ int main(int argc, char** argv) {
     for (const auto& track : tracks) {
         std::cout << track.m_strTitle << '\n';
         std::cout << "path: " << track.m_strIpodPath << '\n';
+        std::cout << "track len: " << track.m_dTrackLen_ms << '\n';
     }
-
-
 
     Track track {
         "E85 [Official Visualizer].mp3",
@@ -35,6 +38,7 @@ int main(int argc, char** argv) {
         "Octane",
         "Rap",
         "",
+        0,
         TRASH_TRACK_ID,
         TRUE,
     };
@@ -51,7 +55,6 @@ int main(int argc, char** argv) {
     }
 
     itdb_free(pIpodMusicDB);
-
 
     return 0;
 }

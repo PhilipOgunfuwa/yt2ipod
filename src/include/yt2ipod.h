@@ -1,6 +1,7 @@
 #ifndef YT2IPOD_H
 #define YT2IPOD_H
 
+
 #include "itdb.h"
 #include <glib.h>
 #include <string>
@@ -10,6 +11,7 @@
 #include <utility>
 #include <filesystem>
 #include <cassert> // or #include <assert.h> fine
+#include "dr_mp3.h"
 
 #define END_OF_ITUNESDB -1 // Add track to end of itunesdb
 #define END_OF_PL -1
@@ -39,6 +41,7 @@ struct Track {
           const gchar *strAlbum,
           const gchar *strGenre,
           const gchar *strIpodPath,
+          gint32 dTrackLen_ms,
           guint32 dID,
           gboolean bTransferred);
 
@@ -47,6 +50,7 @@ struct Track {
     std::string m_strAlbum; // album track is in
     std::string m_strGenre; // genre of track
     std::string m_strIpodPath; // path of track in ipod
+    gint32 m_dTrackLen_ms; // length of track in ms
     guint32 m_dID; // unique id for track
     gboolean m_bTransferred; // true if track needs to be added to iTunesDB
 };
