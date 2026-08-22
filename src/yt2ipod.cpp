@@ -167,9 +167,10 @@ Itdb_Track *add_new_track(
     pTrack->genre = g_strdup(newTrack.m_strGenre.c_str());
 
 
-    // Add track to iTunesDB then copy song into iPod
-    itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), pError); 
+    // Copy song to ipod and then add track to ipod 
     itdb_track_add(pDB, pTrack, END_OF_ITUNESDB);
+    itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), pError); 
+
 
     // Add track to target playlist
     Itdb_Playlist *pTargetPlaylist { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };

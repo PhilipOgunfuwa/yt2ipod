@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     }
 
 
-    /*
+
     Track track {
         "E85 [Official Visualizer].mp3",
         "Don Toliver",
@@ -45,9 +45,13 @@ int main(int argc, char** argv) {
 
     if (pTrack) {
         std::cout << "added to ipod :)\n";
+        std::cout << pTrack->ipod_path << '\n';
+        std::cout << pTrack->id << '\n';
         itdb_write(pIpodMusicDB, &pError);
     }
-*/
+
+    itdb_free(pIpodMusicDB);
+
 
     return 0;
 }
