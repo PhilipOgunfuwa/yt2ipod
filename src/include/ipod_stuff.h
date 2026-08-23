@@ -70,6 +70,6 @@ Itdb_Track *add_new_track(
     Playlist& targetPlaylist, 
     Track& newTrack,
     const std::string& strSrcSongPath,
-    GError **pError
+    GError *pError
 );
 #endif

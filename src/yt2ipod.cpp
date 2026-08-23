@@ -7,54 +7,54 @@
 
 /// @brief Sets up iTunesDB from mount point, and puts playlists and tracks into passed in vecs
 /// @param strMountPoint 
-/// @param pDB 
-/// @param playlists 
-/// @param tracks 
+/// @param pDB // Out parameter
+/// @param playlists // Out parameter
+/// @param tracks // Out parameter
 /// @return True if setup was successful, and false in any other case
 gboolean setup(
     const std::string& strMountPoint, 
-    Itdb_iTunesDB *pDB, 
-    std::vector<std::unique_ptr<Playlist>> *playlists,
-    std::vector<std::unique_ptr<Track>> *tracks
+    Itdb_iTunesDB **pDB, 
+    std::vector<std::unique_ptr<Playlist>> **playlists,
+    std::vector<std::unique_ptr<Track>> **tracks
 )
 {
     std::cout << "Entering yt2ipod setup\n";
-    assert(pDB == nullptr && "Passed a non nullptr Itdb_iTunesDB");
-    assert(playlists->size() == 0 && "Passed playlists that is already populated");
-    assert(tracks->size() == 0 && "Passed tracks that is already populated");
+    assert(pDB && "Passed a non nullptr for iTunesDB");
+    assert(playlists && "Passed a non nullptr for playlists");
+    assert(tracks && "Passed a non nullptr for tracks");
 
-    if (pDB || playlists->size() || tracks->size()) {
+    if (!pDB || !playlists || !tracks) {
         std::cout << "Exiting yt2ipod setup\n";
         return FALSE;
     }
 
     GError *pError { nullptr };
     std::cout << "Opening iTunesDB from iPod mount point @ " << strMountPoint << '\n';
-    pDB = itdb_parse(strMountPoint.c_str(), &pError);
+    *pDB = itdb_parse(strMountPoint.c_str(), &pError);
 
-    if (!pDB || pError) {
+    if (!*pDB || pError) {
         std::cout << "Failed to open iTunesDB\n";
         std::cout << "error: " << pError->message << '\n'; // might want to switch to using fprintf(stderr, char*fmt, ...) here
         std::cout << "Exiting yt2ipod setup\n";
         return FALSE;
     }
 
+    // Copy the iTuneDB to passed in iTunesDB
+
     std::cout << "Successfully opened iTunesDB\n";
     std::cout << "Getting track(s) from iTunesDB\n";
-    tracks = get_tracks(pDB);
-    std::cout << "total of " << tracks->size() << " track(s)\n";
+    *tracks = get_tracks(*pDB);
+    std::cout << "total of " << (*tracks)->size() << " track(s)\n";
 
     std::cout << "Getting playlist(s) from iTunesDB\n";
-    playlists = get_playlists(pDB);
-    std::cout << "total of " << playlists->size() << " playlist(s)\n";
-
+    *playlists = get_playlists(*pDB);
+    std::cout << "total of " << (*playlists)->size() << " playlist(s)\n";
 
     /*
     I imagine server stuff will be here aswell
     */
 
-
-    std::cout << "Successfully setup yt2ipod";
+    std::cout << "Successfully setup yt2ipod\n";
     return TRUE;
 }
 
@@ -69,8 +69,8 @@ void shutdown(
 {
 
     std::cout << "Entering yt2ipod shutdown\n";
-    assert(pDB && "Passed a nullptr for iTunesDB");
-    
+    // assert(pDB && "Passed a nullptr for iTunesDB");
+
     // Possibly handle adding tracks/playlists that are not already in itdb (Go thru and check)
 
     if (pDB) {

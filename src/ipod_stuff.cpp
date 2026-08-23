@@ -108,7 +108,7 @@ std::vector<std::unique_ptr<Playlist>> *get_playlists(Itdb_iTunesDB *pDB) {
 
 /// @brief Get tracks from iTunesDB
 /// @param pDB 
-/// @return tracks from iTunesDB (must deallocate yourself)
+/// @return tracks from iTunesDB 
 std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB) {
     std::vector<std::unique_ptr<Track>> *tracks { new std::vector<std::unique_ptr<Track>>{} };
 
@@ -148,7 +148,8 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB) {
 /// @brief Adds track to iTunesDB and uses path to a string
 /// @param pDB 
 /// @param strMountPoint
-/// @param track 
+/// @param targetPlaylist
+/// @param newTrack 
 /// @param strPathToSong
 /// @param pError
 /// @return Itdb_Track if successfully added to itdb else NULL we also set pError
@@ -158,16 +159,17 @@ Itdb_Track *add_new_track(
     Playlist& targetPlaylist,
     Track& newTrack,
     const std::string& strSrcSongPath,
-    GError **pError
+    GError *pError
 ) 
 {
+    std::cout << "Adding track to iPod\n";
 
     assert(pDB && "Passed nullptr to for the iTunesDB");
-    assert(!*pError && "Passed non nullptr for the GError");
+    assert(!pError && "Passed non nullptr for the GError");
 
     Itdb_Track *pTrack { nullptr };
 
-    if (!pDB || *pError)
+    if (!pDB || pError)
         return pTrack;
 
     pTrack = itdb_track_new();
@@ -185,12 +187,17 @@ Itdb_Track *add_new_track(
     // Add track to iTunesDB, and then update track to be linked to song and copy to iPod
     itdb_track_add(pDB, pTrack, END_OF_ITUNESDB);
 
-    // Add track+song file to 
+    // Add track+song file to iPod
     {
-        gboolean bSuccess { itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), pError) }; 
+        gboolean bSuccess { itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), &pError) }; 
 
-        // Update length of track (in ms)
+        
         if (bSuccess) {
+            std::cout << "Successfully copied track to iPod\n";
+            // Update id
+            newTrack.m_dID = pTrack->id;
+
+            // Update length of track (in ms)
             drmp3 song;
             drmp3_init_file(&song, strSrcSongPath.c_str(), nullptr);
             drmp3_uint64 dSongFrameCount { drmp3_get_pcm_frame_count(&song) }; // frame
@@ -206,11 +213,18 @@ Itdb_Track *add_new_track(
 
             drmp3_uninit(&song);
         }
+
+        else {
+            std::cout << "Failed to copy track to iPod\n";
+        }
     }
 
+    std::cout << "Adding track to playlist (" <<  targetPlaylist.m_strName << ")\n";
     // Add track to target playlist
     Itdb_Playlist *pTargetPlaylist { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
     itdb_playlist_add_track(pTargetPlaylist, pTrack, END_OF_PL);
+    targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
+    std::cout << "Added track to playlist\n";
 
     return pTrack;
 }
