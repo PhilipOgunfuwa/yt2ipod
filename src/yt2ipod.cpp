@@ -61,10 +61,17 @@ gboolean setup(
 
 /// @brief Frees anything from iTunesDB
 /// @param pDB 
-void shutdown(Itdb_iTunesDB *pDB) {
+void shutdown(
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *playlists,
+    std::vector<std::unique_ptr<Track>> *tracks
+) 
+{
 
     std::cout << "Entering yt2ipod shutdown\n";
     assert(pDB && "Passed a nullptr for iTunesDB");
+    
+    // Possibly handle adding tracks/playlists that are not already in itdb (Go thru and check)
 
     if (pDB) {
         const std::string& strMountPoint { itdb_get_mountpoint(pDB) };
@@ -88,6 +95,7 @@ void shutdown(Itdb_iTunesDB *pDB) {
            std::cout << "Changes made since last iTunesDB write won't be applied\n";
         }
 
+        std::cout << "Freeing memory for iTunesDB\n";
         itdb_free(pDB);
     }
     

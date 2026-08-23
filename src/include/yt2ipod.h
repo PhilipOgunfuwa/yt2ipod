@@ -11,7 +11,11 @@ gboolean setup(
     std::vector<std::unique_ptr<Track>> *tracks
 );
 
-void shutdown(Itdb_iTunesDB *pDB);
+void shutdown(
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *playlists,
+    std::vector<std::unique_ptr<Track>> *tracks
+);
 
 
 #endif
