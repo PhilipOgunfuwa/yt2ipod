@@ -61,10 +61,12 @@ gboolean setup(
 
 /// @brief Frees anything from iTunesDB
 /// @param pDB 
+/// @param pPlaylists
+/// @param pTracks
 void shutdown(
     Itdb_iTunesDB *pDB,
-    std::vector<std::unique_ptr<Playlist>> *playlists,
-    std::vector<std::unique_ptr<Track>> *tracks
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    std::vector<std::unique_ptr<Track>> *pTracks
 ) 
 {
 

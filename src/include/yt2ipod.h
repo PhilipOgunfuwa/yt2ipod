@@ -12,9 +12,9 @@ gboolean setup(
 );
 
 void shutdown(
-    Itdb_iTunesDB *ppDB,
-    std::vector<std::unique_ptr<Playlist>> *playlists,
-    std::vector<std::unique_ptr<Track>> *tracks
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    std::vector<std::unique_ptr<Track>> *pTracks
 );
 
 

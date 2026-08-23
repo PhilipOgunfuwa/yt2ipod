@@ -36,7 +36,6 @@ int main(int argc, char** argv) {
 
             Itdb_Track *pTrack { add_new_track(
                 piTunesDB,
-                strMountPoint,
                 *(pPlaylists->front()),
                 *newTrack,
                 strPathToSong, 

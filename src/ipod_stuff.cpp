@@ -155,7 +155,6 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB) {
 /// @return Itdb_Track if successfully added to itdb else NULL we also set pError
 Itdb_Track *add_new_track(
     Itdb_iTunesDB *pDB,
-    const std::string& strMountpoint,
     Playlist& targetPlaylist,
     Track& newTrack,
     const std::string& strSrcSongPath,

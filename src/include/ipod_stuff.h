@@ -64,12 +64,26 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
 
 std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
 
+Itdb_Track *add_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    Track& track,
+    GError *pError
+);
+
 Itdb_Track *add_new_track(
     Itdb_iTunesDB *pDB, 
-    const std::string& strMountPoint,
     Playlist& targetPlaylist, 
     Track& newTrack,
     const std::string& strSrcSongPath,
     GError *pError
 );
+
+gboolean remove_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    Track& track,
+    GError *pError
+);
+
 #endif
