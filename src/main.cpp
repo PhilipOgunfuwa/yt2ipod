@@ -1,5 +1,6 @@
 // #include "include/httplib.h"
 #include "itdb.h"
+#include "include/ipod_stuff.h"
 #include "include/yt2ipod.h"
 #include <iostream>
 
@@ -9,52 +10,48 @@
 
 int main(int argc, char** argv) {
 
-    if (argc != 2) {
-        std::cout << "usage: prog /ipod/mnt/point\n";
+    if (argc != 3) {
+        std::cout << "usage: prog /ipod/mnt/point /path/to/song.mp3";
         return -1;
     }
 
 
     std::string strMountPoint { argv[1] };
-    GError *pError = nullptr;
-    Itdb_iTunesDB *pIpodMusicDB = itdb_parse(strMountPoint.c_str(), &pError);
+    std::string strPathToSong { argv[2] };
 
-    std::vector<Track> tracks { get_tracks(pIpodMusicDB) };
-    std::vector<Playlist> playlists { get_playlists(pIpodMusicDB) };
+    std::vector<std::unique_ptr<Track>> *pTracks { nullptr };
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists { nullptr };
+    Itdb_iTunesDB *piTunesDB { nullptr };
 
-    for (const auto& playlist : playlists) {
-        std::cout << playlist.m_strName << '\n';
+    gboolean bSuccess { setup(strMountPoint, &piTunesDB, &pPlaylists, &pTracks) };
+
+    if (bSuccess) {
+        while (true) {
+            std::cout << "Testing iteration\n";
+            GError *pError { nullptr };
+
+            std::unique_ptr<Track> newTrack { std::make_unique<Track>(
+                "Hesitating", "Malcom Todd", "Prom before", "Pop", "", 0, TRASH_TRACK_ID, FALSE
+            )};
+
+            Itdb_Track *pTrack { add_new_track(
+                piTunesDB,
+                strMountPoint,
+                *(pPlaylists->front()),
+                *newTrack,
+                strPathToSong, 
+                pError
+            )};
+
+            if (pTrack) {
+                pTracks->push_back(std::move(newTrack));
+            }
+
+            break;
+        }
     }
 
-    for (const auto& track : tracks) {
-        std::cout << track.m_strTitle << '\n';
-        std::cout << "path: " << track.m_strIpodPath << '\n';
-        std::cout << "track len: " << track.m_dTrackLen_ms << '\n';
-    }
-
-    Track track {
-        "E85 [Official Visualizer].mp3",
-        "Don Toliver",
-        "Octane",
-        "Rap",
-        "",
-        0,
-        TRASH_TRACK_ID,
-        TRUE,
-    };
-
-    const gchar *filepath { "resources/Don Toliver - E85 [Official Visualizer].mp3" };
-
-    Itdb_Track *pTrack { add_new_track(pIpodMusicDB, strMountPoint, playlists[0], track, filepath, &pError) };
-
-    if (pTrack) {
-        std::cout << "added to ipod :)\n";
-        std::cout << pTrack->ipod_path << '\n';
-        std::cout << pTrack->id << '\n';
-        itdb_write(pIpodMusicDB, &pError);
-    }
-
-    itdb_free(pIpodMusicDB);
+    shutdown(piTunesDB, pPlaylists, pTracks);
 
     return 0;
 }
