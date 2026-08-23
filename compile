@@ -1,1 +1,1 @@
-g++ -std=c++17 -pthread -o main main.cpp yt2ipod.cpp -I /usr/include/gpod-1.0/gpod/ $(pkg-config --cflags --libs glib-2.0) -lgpod -lm
+g++ -std=c++17 -pthread -o main main.cpp ipod_stuff.cpp yt2ipod.cpp -I /usr/include/gpod-1.0/gpod/ $(pkg-config --cflags --libs glib-2.0) -lgpod -lm
