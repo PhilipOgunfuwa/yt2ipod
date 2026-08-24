@@ -1,5 +1,5 @@
 #include "include/yt2ipod.h"
-#include "include/ipod_stuff.h"
+#include "include/ipod_management.h"
 #include <memory>
 #include <iostream>
 #include <string>
@@ -59,7 +59,7 @@ gboolean setup(
 }
 
 
-/// @brief Frees anything from iTunesDB
+/// @brief Frees anything from iTunesDB, saved Playlists, and Tracks
 /// @param pDB 
 /// @param pPlaylists
 /// @param pTracks
@@ -99,6 +99,16 @@ void shutdown(
 
         std::cout << "Freeing memory for iTunesDB\n";
         itdb_free(pDB);
+    }
+
+    if (pPlaylists) {
+        std::cout << "Freeing memory for stored playlists\n";
+        delete pPlaylists;
+    }
+
+    if (pTracks) {
+        std::cout << "Freeing memory for stored tracks\n";
+        delete pTracks;
     }
     
     std::cout << "Exiting yt2ipod shutdown\n";

@@ -1,5 +1,5 @@
 #include "itdb.h"
-#include "include/ipod_stuff.h"
+#include "include/ipod_management.h"
 #include "include/dr_mp3.h"
 #include <utility>
 #include <filesystem>
@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <iostream>
+#include <array>
 
 /// @brief Initialize a track
 /// @param strTitle 
@@ -57,11 +58,13 @@ Track::Track(const gchar *strTitle,
 /// @param bIsSmartPL 
 /// @param dID 
 Playlist::Playlist(std::vector<guint32>&& TrackIDs, 
-                   const gchar *strName, 
+                   const gchar *strName,
+                   bool bIsMPL, 
                    bool bIsSmartPL, 
                    guint64 dID) 
     : m_TrackIDs { TrackIDs }
     , m_strName { "" }
+    , m_bIsMPL { bIsMPL }
     , m_bIsSmartPL { bIsSmartPL }
     , m_dID { dID }
 {
@@ -89,11 +92,13 @@ std::vector<std::unique_ptr<Playlist>> *get_playlists(Itdb_iTunesDB *pDB) {
             break;
 
         std::vector<guint32> trackIDs = get_track_ids(pCurPlaylist);
+        gboolean bIsMPL { itdb_playlist_is_mpl(pCurPlaylist) };
 
         // Make playlist (that front end will use)
         std::unique_ptr<Playlist> playlist { std::make_unique<Playlist>(
             std::move(trackIDs),
             pCurPlaylist->name,
+            bIsMPL,
             pCurPlaylist->is_spl,
             pCurPlaylist->id
         )};
@@ -232,6 +237,9 @@ Itdb_Track *add_new_track(
 /// @param pPlaylist 
 /// @return ids of tracks 
 std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist) {
+
+    assert(pPlaylist && "Passed nullptr for Itdb Playlist");
+
     std::vector<guint32> trackIDs {};
 
     if (pPlaylist == nullptr)
@@ -252,4 +260,68 @@ std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist) {
     }
 
     return trackIDs;
+}
+
+/// @brief Remove track from target playlist (And all other playlists if it is the master playlist)
+/// @param pDB 
+/// @param targetPlaylist 
+/// @param pPlaylists 
+/// @param track 
+/// @param pError 
+/// @return True on success and False in any other case
+gboolean remove_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Track& targetTrack,
+    GError *pError
+)
+{
+    std::cout << "Removing track from iPod\n";
+
+    assert(pDB && "Passed nullptr for iTunesDB");
+    assert(!pError && "Passed gerror is not a nullptr");
+    assert(pPlaylists && "Passed nullptr for Playlists");
+
+    if (!pDB || pError || !pPlaylists)
+        return FALSE;
+
+    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
+
+    if (!pTargetItdbPl) {
+        std::cout << "Target playlist \"" << targetPlaylist.m_strName << "\" is not in iTunesDB\n";
+        return FALSE;
+    }
+
+    Itdb_Track *pTargetItdbTrack { itdb_track_by_id(pDB, targetTrack.m_dID) };
+
+    if (!pTargetItdbTrack) {
+        std::cout << "Target track \"" << targetTrack.m_dID << "\" is not in iTunesDB\n";
+        return FALSE;
+    }
+
+    // Get all playlists that contain track and need to be removed    
+    gboolean bIsMPL { itdb_playlist_is_mpl(pTargetItdbPl) };
+
+    // Add removing from target playlist
+
+    if (bIsMPL) {
+        for (const auto& playlist : *pPlaylists) {
+
+            Itdb_Playlist *pCurItdbPl { itdb_playlist_by_id(pDB, playlist->m_dID) };
+
+            // If same address we are dealing with same (master) playlist so skip
+            if (pCurItdbPl == pTargetItdbPl)
+                continue;
+            
+            // Remove track if playlist has it
+            if (itdb_playlist_contains_track(pCurItdbPl, pTargetItdbTrack)) {
+                std::cout << "Removing target track from \"" << playlist->m_strName << "\"\n";
+                itdb_playlist_remove_track(pCurItdbPl, pTargetItdbTrack);
+                std::cout << "Removed target track from \"" << playlist->m_strName << "\"\n";
+            }
+        }
+    }
+
+    return TRUE;
 }

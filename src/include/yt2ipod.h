@@ -1,7 +1,7 @@
 #ifndef YT2IPOD_H
 #define YT2IPOD_H
 
-#include "ipod_stuff.h"
+#include "ipod_management.h"
 #include <glib.h>
 
 gboolean setup(

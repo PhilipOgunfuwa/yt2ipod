@@ -1,6 +1,6 @@
 // #include "include/httplib.h"
 #include "itdb.h"
-#include "include/ipod_stuff.h"
+#include "include/ipod_management.h"
 #include "include/yt2ipod.h"
 #include <iostream>
 
