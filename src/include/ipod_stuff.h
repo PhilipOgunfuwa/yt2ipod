@@ -64,6 +64,8 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
 
 std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
 
+
+// May want to consolidate this into one func (combine w/ add_new_track)
 Itdb_Track *add_track(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
