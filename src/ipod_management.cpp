@@ -8,6 +8,7 @@
 #include <string_view>
 #include <iostream>
 #include <array>
+#include <algorithm>
 
 /// @brief Initialize a track
 /// @param strTitle 
@@ -267,7 +268,6 @@ std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist) {
 /// @param targetPlaylist 
 /// @param pPlaylists 
 /// @param track 
-/// @param pError 
 /// @return True on success and False in any other case
 gboolean remove_track(
     Itdb_iTunesDB *pDB,
@@ -280,10 +280,9 @@ gboolean remove_track(
     std::cout << "Removing track from iPod\n";
 
     assert(pDB && "Passed nullptr for iTunesDB");
-    assert(!pError && "Passed gerror is not a nullptr");
     assert(pPlaylists && "Passed nullptr for Playlists");
 
-    if (!pDB || pError || !pPlaylists)
+    if (!pDB || !pPlaylists)
         return FALSE;
 
     Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
@@ -303,25 +302,58 @@ gboolean remove_track(
     // Get all playlists that contain track and need to be removed    
     gboolean bIsMPL { itdb_playlist_is_mpl(pTargetItdbPl) };
 
-    // Add removing from target playlist
-
-    if (bIsMPL) {
+    if (bIsMPL) { // If removing from MPL we are removing from EVERYTHING
         for (const auto& playlist : *pPlaylists) {
-
             Itdb_Playlist *pCurItdbPl { itdb_playlist_by_id(pDB, playlist->m_dID) };
-
-            // If same address we are dealing with same (master) playlist so skip
-            if (pCurItdbPl == pTargetItdbPl)
-                continue;
             
             // Remove track if playlist has it
             if (itdb_playlist_contains_track(pCurItdbPl, pTargetItdbTrack)) {
-                std::cout << "Removing target track from \"" << playlist->m_strName << "\"\n";
+                std::cout << "Removing track \"" << targetTrack.m_strTitle << "\" from \"" << playlist->m_strName << "\"\n";
                 itdb_playlist_remove_track(pCurItdbPl, pTargetItdbTrack);
-                std::cout << "Removed target track from \"" << playlist->m_strName << "\"\n";
+                std::cout << "Removed track \"" << targetTrack.m_strTitle << "\" from \"" << playlist->m_strName << "\"\n";
+
+                // Remove track from regular playlists object
+                // Note that dTrackID is an iterator for the trackID in playlist
+                auto trackID { std::find(playlist->m_TrackIDs.begin(), playlist->m_TrackIDs.end(), targetTrack.m_dID) };
+
+                // Track ID (this should ALWAYS execute...) is in our verison of playlist
+                if (trackID != playlist->m_TrackIDs.end());
+                    playlist->m_TrackIDs.erase(trackID);
             }
+        }
+
+        std::cout << "Removing \"" << targetTrack.m_strTitle << "\" from iPod iTunesDB\n";
+        itdb_track_remove(pTargetItdbTrack);
+        std::cout << "Removed \"" << targetTrack.m_strTitle << "\" from iPod iTunesDB\n";
+    }
+
+    // Remove from single target playlist
+    else {
+        if (itdb_playlist_contains_track(pTargetItdbPl, pTargetItdbTrack)) {
+            std::cout << "Removing track \"" << targetTrack.m_strTitle << "\" from \"" << targetPlaylist.m_strName << "\"\n";
+            itdb_playlist_remove_track(pTargetItdbPl, pTargetItdbTrack);
+            std::cout << "Removed track \"" << targetTrack.m_strTitle << "\" from \"" << targetPlaylist.m_strName << "\"\n";
+
+            // Remove track from regular playlists object
+            // Note that dTrackID is an iterator for the trackID in playlist
+            auto trackID { std::find(targetPlaylist.m_TrackIDs.begin(), targetPlaylist.m_TrackIDs.end(), targetTrack.m_dID) };
+
+                // Track ID (this should ALWAYS execute...) is in our verison of playlist
+                if (trackID !=targetPlaylist.m_TrackIDs.end());
+                    targetPlaylist.m_TrackIDs.erase(trackID);
         }
     }
 
-    return TRUE;
+    std::cout << "Writing to iTunesDB...\n";
+    gboolean bSuccess { itdb_write(pDB, &pError) };
+
+    if (bSuccess) {
+        std::cout << "Successfully wrote to iTunesDB\n";
+        return TRUE;
+    }
+
+    // Failure
+    std::cout << "Failed to write to iTunesDB\n";
+    std::cout << "error: " << pError->message << '\n';
+    return FALSE;
 }

@@ -3,6 +3,7 @@
 #include "include/ipod_management.h"
 #include "include/yt2ipod.h"
 #include <iostream>
+#include <cassert>
 
 // For MP3s
 #define DR_MP3_IMPLEMENTATION
@@ -25,25 +26,29 @@ int main(int argc, char** argv) {
 
     gboolean bSuccess { setup(strMountPoint, &piTunesDB, &pPlaylists, &pTracks) };
 
+    assert(pTracks && "pTracks in nullptr");
+    assert(pPlaylists && "pPlaylists is nullptr");
+    assert(piTunesDB && "iTunesDB is nullptr");
+
     if (bSuccess) {
         while (true) {
             std::cout << "Testing iteration\n";
             GError *pError { nullptr };
 
-            std::unique_ptr<Track> newTrack { std::make_unique<Track>(
-                "Hesitating", "Malcom Todd", "Prom before", "Pop", "", 0, TRASH_TRACK_ID, FALSE
-            )};
+            for (const auto& playlist : *pPlaylists) {
+                std::cout << "Cur playlist: " << playlist->m_strName << '\n';
 
-            Itdb_Track *pTrack { add_new_track(
-                piTunesDB,
-                *(pPlaylists->front()),
-                *newTrack,
-                strPathToSong, 
-                pError
-            )};
+                for (const auto& id : playlist->m_TrackIDs)
+                    std::cout << "id: " << id << '\n';
+            }
 
-            if (pTrack) {
-                pTracks->push_back(std::move(newTrack));
+            remove_track(piTunesDB, *(pPlaylists->front()), pPlaylists, *(pTracks->front()), pError);
+
+            for (const auto& playlist : *pPlaylists) {
+                std::cout << "Cur playlist: " << playlist->m_strName << '\n';
+
+                for (const auto& id : playlist->m_TrackIDs)
+                    std::cout << "id: " << id << '\n';
             }
 
             break;
