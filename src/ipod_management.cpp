@@ -263,11 +263,67 @@ std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist) {
     return trackIDs;
 }
 
+gboolean update_track(
+    Itdb_iTunesDB *pDB,
+    Track& targetTrack,
+    GError *pError
+)
+{
+    assert(pDB && "Passed a nullptr for iTunesDB");
+
+    if (!pDB)
+        return FALSE;
+
+    gboolean bUpdated { FALSE };
+
+    Itdb_Track *pTargetItdbTrack { itdb_track_by_id(pDB, targetTrack.m_dID) };
+
+    // Update track
+    if (pTargetItdbTrack) {
+        std::cout << "Updating track\n";
+        
+        // Free all previous strings
+        if (pTargetItdbTrack->title) 
+            g_free(pTargetItdbTrack->title);
+        pTargetItdbTrack->title = g_strdup(targetTrack.m_strTitle.c_str());
+
+        if (pTargetItdbTrack->artist)
+            g_free(pTargetItdbTrack->artist);
+        pTargetItdbTrack->artist = g_strdup(targetTrack.m_strArtist.c_str());
+
+        if (pTargetItdbTrack->album)
+            g_free(pTargetItdbTrack->album);
+        pTargetItdbTrack->album = g_strdup(targetTrack.m_strAlbum.c_str());
+
+        if (pTargetItdbTrack->genre)
+            g_free(pTargetItdbTrack->genre);
+        pTargetItdbTrack->genre = g_strdup(targetTrack.m_strGenre.c_str());
+
+        std::cout << "Writing to iTunesDB\n";
+        bUpdated = itdb_write(pDB, &pError);
+        
+        if (bUpdated) {
+            std::cout << "Succesfully wrote to iTunesDB\n";
+        }
+        else {
+            std::cout << "Failed to write to iTunesDB\n";
+            std::cout << "error: " << pError->message << '\n';
+        }
+    }
+
+    else {
+        std::cout << "Failed updating track\n";
+    }
+
+    return bUpdated;
+}
+
 /// @brief Remove track from target playlist (And all other playlists if it is the master playlist)
 /// @param pDB 
 /// @param targetPlaylist 
 /// @param pPlaylists 
 /// @param track 
+/// @param pError
 /// @return True on success and False in any other case
 gboolean remove_track(
     Itdb_iTunesDB *pDB,

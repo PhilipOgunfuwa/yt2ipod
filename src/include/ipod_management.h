@@ -87,6 +87,12 @@ Itdb_Track *add_new_track(
     GError *pError
 );
 
+gboolean update_track(
+    Itdb_iTunesDB *pDB,
+    Track& targetTrack,
+    GError *pError
+);
+
 gboolean remove_track(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
