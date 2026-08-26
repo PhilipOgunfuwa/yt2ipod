@@ -1,5 +1,5 @@
-#ifndef IPOD_STUFF_H
-#define IPOD_STUFF_H
+#ifndef IPOD_MANAGEMENT_H
+#define IPOD_MANAGEMENT_H
 #include "itdb.h"
 #include <glib.h>
 #include <vector>
@@ -12,22 +12,28 @@
 #define TRASH_TRACK_ID 0xFFFFFFFF
 #define TRASH_PL_ID 0xFFFFFFFFFFFFFFFF
 
-struct Playlist;
-struct Track;
+struct Playlist; // Basically serves as a way to move between JSON Playlist that frontend uses to backend of itdb
+struct Track; // Basically serves as a way to move between JSON Track that frontend uses to backend of itdb
 
+// You'll note that in the codebase, Itdb_Playlist * are preferred to Playlist when actually
+// manipulating iTunesDB data. We store these things simply so its easier to JSONify them
 struct Playlist {
 
     Playlist(std::vector<guint32>&& TrackIDs, 
              const gchar *strName, 
+             bool bIsMPL,
              bool bIsSmartPL, 
              guint64 dID);
 
     std::vector<guint32> m_TrackIDs; // unique ids for tracks in playlist
     std::string m_strName; // name of playlist
+    bool m_bIsMPL; // true if playlist is master playlist
     bool m_bIsSmartPL; // true if playlist is smart playlist
     guint64 m_dID; // unique id for playlist
 };
 
+// You'll note that in the codebase, Itdb_Track * are preferred to Track when actually
+// manipulating iTunesDB data. We store these things simply so its easier to JSONify them
 struct Track {
 
     Track(const gchar *strTitle,
@@ -64,12 +70,29 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
 
 std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
 
+
+// May want to consolidate this into one func (combine w/ add_new_track)
+Itdb_Track *add_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    Track& track,
+    GError *pError
+);
+
 Itdb_Track *add_new_track(
     Itdb_iTunesDB *pDB, 
-    const std::string& strMountPoint,
     Playlist& targetPlaylist, 
     Track& newTrack,
     const std::string& strSrcSongPath,
     GError *pError
 );
+
+gboolean remove_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Track& track,
+    GError *pError
+);
+
 #endif

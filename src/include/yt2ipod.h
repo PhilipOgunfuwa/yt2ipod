@@ -1,7 +1,7 @@
 #ifndef YT2IPOD_H
 #define YT2IPOD_H
 
-#include "ipod_stuff.h"
+#include "ipod_management.h"
 #include <glib.h>
 
 gboolean setup(
@@ -12,9 +12,9 @@ gboolean setup(
 );
 
 void shutdown(
-    Itdb_iTunesDB *ppDB,
-    std::vector<std::unique_ptr<Playlist>> *playlists,
-    std::vector<std::unique_ptr<Track>> *tracks
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    std::vector<std::unique_ptr<Track>> *pTracks
 );
 
 
