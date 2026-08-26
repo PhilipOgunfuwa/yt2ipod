@@ -89,7 +89,8 @@ Itdb_Track *add_new_track(
 
 gboolean update_track(
     Itdb_iTunesDB *pDB,
-    Track& targetTrack
+    Track& targetTrack,
+    GError *pError
 );
 
 gboolean remove_track(
