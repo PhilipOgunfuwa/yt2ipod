@@ -71,7 +71,26 @@ Playlist::Playlist(std::vector<guint32>&& TrackIDs,
 {
     // Turn C-style strings to std::strings if non null
     if (strName)
-        m_strName = (strName);
+        m_strName = strName;
+}
+
+/// @brief Initialize a playlist (probably new)
+/// @param strName 
+/// @param bIsMPL 
+/// @param bIsSmartPL 
+/// @param dID 
+Playlist::Playlist(const gchar *strName, 
+                   bool bIsMPL,
+                   bool bIsSmartPL, 
+                   guint64 dID)
+    : m_TrackIDs { } // Value initialize vector
+    , m_strName { "" }
+    , m_bIsMPL { bIsMPL }
+    , m_bIsSmartPL { bIsSmartPL }
+    , m_dID { dID }
+{
+    if (strName)
+        m_strName = strName;
 }
 
 /// @brief Get playlists from iTunesDB
@@ -337,8 +356,9 @@ gboolean remove_track(
 
     assert(pDB && "Passed nullptr for iTunesDB");
     assert(pPlaylists && "Passed nullptr for Playlists");
+    assert(!pError && "Passed non nullptr for GError");
 
-    if (!pDB || !pPlaylists)
+    if (!pDB || !pPlaylists || pError)
         return FALSE;
 
     Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
@@ -449,4 +469,49 @@ gboolean remove_track(
     std::cout << "Failed to write to iTunesDB\n";
     std::cout << "error: " << pError->message << '\n';
     return FALSE;
+}
+
+Itdb_Playlist *add_playlist(
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Playlist& newPlaylist,
+    GError *pError
+)
+{
+    std::cout << "Adding playlist to iTunesDB\n";
+
+    assert(pDB && "Passed nullptr for iTunesDB");
+    assert(!pError && "Passed nullptr for GError");
+    assert(pPlaylists && "Passed nullptr for Playlists");
+
+    if (!pDB || pError)
+        return nullptr;
+
+    Itdb_Playlist *pPlaylist { itdb_playlist_new(newPlaylist.m_strName.c_str(), newPlaylist.m_bIsSmartPL) };
+
+    if (!pPlaylist)
+        return nullptr;
+
+    pPlaylist->name = g_strdup(newPlaylist.m_strName.c_str());
+
+    // Add itdb playlist to end of iTunesDB
+    itdb_playlist_add(pDB, pPlaylist, END_OF_ITUNESDB);
+    std::cout << "Added playlist to iTunesDB";
+
+    // Now add playlist to our Playlists buffer
+    pPlaylists->push_back(std::move(std::make_unique<Playlist>(newPlaylist)));
+
+    std::cout << "Writing to iTunesDB\n";
+    gboolean bSuccess { itdb_write(pDB, &pError) };
+    
+    if (bSuccess) {
+        std::cout << "Successfuly wrote to iTunesDB\n";
+    }
+
+    else {
+        std::cout << "Failed to write to iTunesDB\n";
+        std::cout << "error: " << pError->message << '\n';
+    }
+
+    return pPlaylist;
 }
