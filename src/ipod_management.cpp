@@ -325,6 +325,43 @@ gboolean remove_track(
         std::cout << "Removing \"" << targetTrack.m_strTitle << "\" from iPod iTunesDB\n";
         itdb_track_remove(pTargetItdbTrack);
         std::cout << "Removed \"" << targetTrack.m_strTitle << "\" from iPod iTunesDB\n";
+        
+        std::cout << "Removing \"" << targetTrack.m_strIpodPath << "\" from iPod Music Directory\n";
+        {
+            gboolean bSuccess { FALSE };
+
+            const gchar *striPodMountPath { itdb_get_mountpoint(pDB) };
+            gchar *strRelSongPath { g_strdup(targetTrack.m_strIpodPath.c_str()) }; // We need to free this
+
+            // We have all the data we need
+            if (striPodMountPath && strRelSongPath) {
+                itdb_filename_ipod2fs(strRelSongPath); // iPod uses ':' as file dir deliminator. This swaps back to '/'
+                gchar *strAbsSongPath { g_strconcat(striPodMountPath, strRelSongPath, NULL) }; // we need to free this
+                std::cout << "Absolute path to song is \"" << strAbsSongPath << "\"\n";
+                std::filesystem::path AbsSongPath { strAbsSongPath };
+
+                // Successfully removed song
+                if (std::filesystem::remove(AbsSongPath)) 
+                    std::cout << "Removed \"" << targetTrack.m_strIpodPath << "\" from iPod Music Directory\n";
+
+                // Didn't remove song
+                else 
+                    std::cout << "Failed to remove \"" << targetTrack.m_strIpodPath << "\" from iPod Music Directory\n";
+
+                g_free(strAbsSongPath);
+            }
+            else {
+                std::cout << "Failed to remove \"" << targetTrack.m_strIpodPath << "\" from iPod Music Directory\n";
+                if (!striPodMountPath)
+                    std::cout << "Failed to get iPods mount point from iTunesDB\n";
+
+                if (!strRelSongPath)
+                    std::cout << "Failed to get iPods relative song path from target track\n";
+            }
+
+            g_free(strRelSongPath);
+        }
+
     }
 
     // Remove from single target playlist
