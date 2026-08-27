@@ -25,6 +25,11 @@ struct Playlist {
              bool bIsSmartPL, 
              guint64 dID);
 
+    Playlist(const gchar *strName, 
+             bool bIsMPL,
+             bool bIsSmartPL, 
+             guint64 dID);
+
     std::vector<guint32> m_TrackIDs; // unique ids for tracks in playlist
     std::string m_strName; // name of playlist
     bool m_bIsMPL; // true if playlist is master playlist
@@ -98,6 +103,13 @@ gboolean remove_track(
     Playlist& targetPlaylist,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     Track& track,
+    GError *pError
+);
+
+Itdb_Playlist *add_playlist(
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Playlist& newPlaylist,
     GError *pError
 );
 

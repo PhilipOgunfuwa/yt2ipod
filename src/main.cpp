@@ -35,22 +35,18 @@ int main(int argc, char** argv) {
             std::cout << "Testing iteration\n";
             GError *pError { nullptr };
 
-            for (const auto& track : *pTracks) {
-                std::cout << "Cur track: " << track->m_strTitle << '\n';
+            for (const auto& playlist : *pPlaylists) {
+                std::cout << "Playlist ame: " << playlist->m_strName << '\n';
+                std::cout << "id: " << playlist->m_dID << '\n';
             }
 
-            Track& TargetTrack { *(pTracks->at(3)) };
-            std::cout << "Track before \"" << TargetTrack.m_strTitle << "\"\n";
+            Playlist testPlaylist { "Testing", FALSE, FALSE, TRASH_PL_ID };
 
-            TargetTrack.m_strArtist = "Test";
-            TargetTrack.m_strTitle = "Testing Title";
+            Itdb_Playlist * testItdbplaylst { add_playlist(piTunesDB, pPlaylists, testPlaylist, pError) };
 
-            update_track(piTunesDB, TargetTrack, pError);
-
-            std::cout << "Track after \"" << TargetTrack.m_strTitle << "\"\n";
-
-            for (const auto& track : *pTracks) {
-                std::cout << "Cur track: " << track->m_strTitle << '\n';
+            for (const auto& playlist : *pPlaylists) {
+                std::cout << "Playlist ame: " << playlist->m_strName << '\n';
+                std::cout << "id: " << playlist->m_dID << '\n';
             }
 
             break;
