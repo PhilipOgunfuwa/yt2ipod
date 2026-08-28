@@ -113,4 +113,10 @@ Itdb_Playlist *add_playlist(
     GError *pError
 );
 
+gboolean update_playlist(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    GError *pError  
+);
+
 #endif
