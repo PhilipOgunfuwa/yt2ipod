@@ -40,9 +40,11 @@ int main(int argc, char** argv) {
                 std::cout << "id: " << playlist->m_dID << '\n';
             }
 
-            Playlist testPlaylist { "Testing", FALSE, FALSE, TRASH_PL_ID };
+            Playlist &testPlaylist { *(pPlaylists->at(2)) };
+            std::cout << testPlaylist.m_strName << " not so new name\n";
+            testPlaylist.m_strName = "why no change :(";
 
-            Itdb_Playlist * testItdbplaylst { add_playlist(piTunesDB, pPlaylists, testPlaylist, pError) };
+            gboolean bSuccess { update_playlist(piTunesDB, testPlaylist, pError) };
 
             for (const auto& playlist : *pPlaylists) {
                 std::cout << "Playlist ame: " << playlist->m_strName << '\n';

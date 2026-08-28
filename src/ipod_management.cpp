@@ -515,3 +515,53 @@ Itdb_Playlist *add_playlist(
 
     return pPlaylist;
 }
+
+/// @brief Update playlist
+/// @param pDB 
+/// @param newPlaylist 
+/// @param pError 
+/// @return Return true on success and false in all other cases
+gboolean update_playlist(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    GError *pError  
+)
+{
+
+    gboolean bUpdated { FALSE };
+
+    assert(pDB && "Passed nullptr for iTunesDB");
+    assert(!pError && "Passed a non nullptr for GError");
+
+    if (!pDB || pError)
+        return bUpdated;
+
+    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
+
+    if (pTargetItdbPl) {
+        std::cout << "Updating playlist\n";
+        // Update playlist with new string (for now this is probably we'll have to do)
+        if (pTargetItdbPl->name)
+            g_free(pTargetItdbPl->name);
+        pTargetItdbPl->name = g_strdup(targetPlaylist.m_strName.c_str());
+
+        std::cout << "Writing to iTunesDB\n";
+        bUpdated = itdb_write(pDB, &pError);
+
+        if (bUpdated) {
+            std::cout << "Successfully wrote to iTunesDB\n";
+        }
+
+        else {
+            std::cout << "Failed to write to iTunesDB\n";
+            std::cout << "error: " << pError->message << '\n';
+        }
+
+    }
+
+    else {
+        std::cout << "Failed to retrieve playlist from iTunesDB\n";
+    }
+
+    return bUpdated;
+}
