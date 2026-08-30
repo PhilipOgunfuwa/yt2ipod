@@ -24,6 +24,7 @@ Track::Track(const gchar *strTitle,
              const gchar *strIpodPath,
              gint32 dTrackLen_ms,
              guint32 dID,
+             guint64 dDBID,
              gboolean bTransferred)
     : m_strTitle { "" }
     , m_strArtist { "" }
@@ -32,6 +33,7 @@ Track::Track(const gchar *strTitle,
     , m_strIpodPath { "" }
     , m_dTrackLen_ms { dTrackLen_ms }
     , m_dID { dID }
+    , m_dBDID { dDBID }
     , m_bTransferred { bTransferred }
 {
 
@@ -162,6 +164,9 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB) {
             FALSE // Track doesn't need added to iTunesDB
         )};
 
+        std::cout << "regular id: " << pCurTrack->id << '\n';
+        std::cout << "dbid: " << pCurTrack->dbid << '\n';
+
         tracks->push_back(std::move(track));
 
         pCurrentNode = pCurrentNode->next;
@@ -182,12 +187,11 @@ Itdb_Track *add_new_track(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
     Track& newTrack,
+    std::vector<std::unique_ptr<Track>> *pTracks,
     const std::string& strSrcSongPath,
     GError *pError
 ) 
 {
-    std::cout << "Adding track to iPod\n";
-
     assert(pDB && "Passed nullptr to for the iTunesDB");
     assert(!pError && "Passed non nullptr for the GError");
 
@@ -209,17 +213,18 @@ Itdb_Track *add_new_track(
 
 
     // Add track to iTunesDB, and then update track to be linked to song and copy to iPod
+    std::cout << "Adding track to iPod\n";
     itdb_track_add(pDB, pTrack, END_OF_ITUNESDB);
 
     // Add track+song file to iPod
     {
         gboolean bSuccess { itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), &pError) }; 
 
-        
         if (bSuccess) {
             std::cout << "Successfully copied track to iPod\n";
             // Update id
             newTrack.m_dID = pTrack->id;
+            std::cout << "id from itdb: " << pTrack->id << '\n';
 
             // Update length of track (in ms)
             drmp3 song;
@@ -236,6 +241,10 @@ Itdb_Track *add_new_track(
             newTrack.m_dTrackLen_ms = dTrackLen_ms;
 
             drmp3_uninit(&song);
+
+            // Add track to our saved version
+            std::unique_ptr<Track> track { std::make_unique<Track>(newTrack) };
+            pTracks->push_back(std::move(track));
         }
 
         else {
@@ -249,6 +258,20 @@ Itdb_Track *add_new_track(
     itdb_playlist_add_track(pTargetPlaylist, pTrack, END_OF_PL);
     targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
     std::cout << "Added track to playlist\n";
+
+    {
+        std::cout << "Writing to iTunesDB\n";
+        gboolean bSuccess { itdb_write(pDB, &pError) };
+
+        if (bSuccess) {
+            std::cout << "Successfully wrote to iTunesDB\n";
+        }
+        
+        else {
+            std::cout << "Failed to write to iTunesDB\n";
+            std::cout << "error: " << pError->message << '\n';
+        }
+    }
 
     return pTrack;
 }
@@ -373,7 +396,7 @@ gboolean remove_track(
     Itdb_Track *pTargetItdbTrack { itdb_track_by_id(pDB, targetTrack.m_dID) };
 
     if (!pTargetItdbTrack) {
-        std::cout << "Target track \"" << targetTrack.m_dID << "\" is not in iTunesDB\n";
+        std::cout << "Target track \"" << targetTrack.m_strTitle << "\" is not in iTunesDB\n";
         return FALSE;
     }
 

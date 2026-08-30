@@ -48,6 +48,7 @@ struct Track {
           const gchar *strIpodPath,
           gint32 dTrackLen_ms,
           guint32 dID,
+          guint64, dDBID,
           gboolean bTransferred);
 
     std::string m_strTitle; // title of track
@@ -56,7 +57,8 @@ struct Track {
     std::string m_strGenre; // genre of track
     std::string m_strIpodPath; // path of track in ipod
     gint32 m_dTrackLen_ms; // length of track in ms
-    guint32 m_dID; // unique id for track
+    guint32 m_dID; // unique id for track (internal for playlist)
+    guint64 m_dDBID; // unique id for track (internal for iTunesDB)
     gboolean m_bTransferred; // true if track needs to be added to iTunesDB
 };
 
@@ -66,46 +68,6 @@ struct Track {
 */
 
 std::vector<std::unique_ptr<Playlist>> *get_playlists(Itdb_iTunesDB *pDB);
-
-/*
-        Track Functions
-*/
-
-std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
-
-std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
-
-
-// May want to consolidate this into one func (combine w/ add_new_track)
-Itdb_Track *add_track(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    Track& track,
-    GError *pError
-);
-
-Itdb_Track *add_new_track(
-    Itdb_iTunesDB *pDB, 
-    Playlist& targetPlaylist, 
-    Track& newTrack,
-    const std::string& strSrcSongPath,
-    GError *pError
-);
-
-gboolean update_track(
-    Itdb_iTunesDB *pDB,
-    Track& targetTrack,
-    GError *pError
-);
-
-gboolean remove_track(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
-    Track& track,
-    std::vector<std::unique_ptr<Track>> *pTracks,
-    GError *pError
-);
 
 Itdb_Playlist *add_playlist(
     Itdb_iTunesDB *pDB,
@@ -126,5 +88,47 @@ gboolean remove_playlist(
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     GError *pError
 );
+
+/*
+        Track Functions
+*/
+
+std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
+
+std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
+
+// May want to consolidate this into one func (combine w/ add_new_track)
+Itdb_Track *add_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    Track& track,
+    GError *pError
+);
+
+Itdb_Track *add_new_track(
+    Itdb_iTunesDB *pDB, 
+    Playlist& targetPlaylist, 
+    Track& newTrack,
+    std::vector<std::unique_ptr<Track>> *pTracks,
+    const std::string& strSrcSongPath,
+    GError *pError
+);
+
+gboolean update_track(
+    Itdb_iTunesDB *pDB,
+    Track& targetTrack,
+    GError *pError
+);
+
+gboolean remove_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Track& track,
+    std::vector<std::unique_ptr<Track>> *pTracks,
+    GError *pError
+);
+
+
 
 #endif
