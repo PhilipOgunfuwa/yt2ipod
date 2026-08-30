@@ -103,6 +103,7 @@ gboolean remove_track(
     Playlist& targetPlaylist,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     Track& track,
+    //     std::vector<std::unique_ptr<Track>> *pTracks,
     GError *pError
 );
 
@@ -117,6 +118,13 @@ gboolean update_playlist(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
     GError *pError  
+);
+
+gboolean remove_playlist(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    GError *pError
 );
 
 #endif
