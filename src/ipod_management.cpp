@@ -497,6 +497,7 @@ Itdb_Playlist *add_playlist(
     // Add itdb playlist to end of iTunesDB
     itdb_playlist_add(pDB, pPlaylist, END_OF_ITUNESDB);
     std::cout << "Added playlist to iTunesDB";
+    newPlaylist.m_dID = pPlaylist->id;
 
     // Now add playlist to our Playlists buffer
     pPlaylists->push_back(std::move(std::make_unique<Playlist>(newPlaylist)));
@@ -556,7 +557,6 @@ gboolean update_playlist(
             std::cout << "Failed to write to iTunesDB\n";
             std::cout << "error: " << pError->message << '\n';
         }
-
     }
 
     else {
@@ -564,4 +564,66 @@ gboolean update_playlist(
     }
 
     return bUpdated;
+}
+
+gboolean remove_playlist(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    GError *pError
+)
+{
+    assert(pDB && "Passed a nullptr for iTunesDB");
+    assert(!pError && "Passed a non ullptr for GError");
+    assert(pPlaylists && "Passed nullptr for Playlists");
+
+    // Preferably lets not let the user remove the Master playlist
+    // We can think about how to handle this another time (Mainly because libgpod/itdb_parse relies ondat)
+    if (!pDB || pError || !pPlaylists || targetPlaylist.m_bIsMPL)
+        return FALSE;
+
+    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
+
+    gboolean bSuccess { FALSE };
+
+    if (pTargetItdbPl) {
+        // Just incase our playlist function doesn't align with our reality
+        if (itdb_playlist_is_mpl(pTargetItdbPl)) {
+            std::cout << "Can't remove master playlist from iPod\n";
+            return FALSE;
+        }
+
+        std::cout << "Removing playlist \"" << targetPlaylist.m_strName << "\" from iTunesDB\n";
+        itdb_playlist_remove(pTargetItdbPl);
+        std::cout << "Removed playlist from iTunesDB\n";
+
+        // Remove playlist on our end
+        // Note we can't remove targetPlaylist with just a reference or index...
+        for (int i { 0 }; i < pPlaylists->size(); i++) {
+            // Found playlist to be removed
+            if (pPlaylists->at(i)->m_dID == targetPlaylist.m_dID) {
+                auto targetElement { pPlaylists->begin() + i };
+                pPlaylists->erase(targetElement);
+                break;
+            }
+        }
+
+        std::cout << "Writing to iTunesDB\n";
+        bSuccess = itdb_write(pDB, &pError);
+
+        if (bSuccess) {
+            std::cout << "Successfully wrote to iTunesDB\n";
+        }
+
+        else {
+            std::cout << "Failed to write to iTunesDB\n";
+            std::cout << "error: " << pError->message << '\n';
+        }
+    }
+
+    else {
+        std::cout << "Failed to get playlist in iTunesDB\n";
+    }
+
+    return bSuccess;
 }
