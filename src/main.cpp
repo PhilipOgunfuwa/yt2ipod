@@ -35,20 +35,47 @@ int main(int argc, char** argv) {
             std::cout << "Testing iteration\n";
             GError *pError { nullptr };
 
+
             for (const auto& playlist : *pPlaylists) {
-                std::cout << "Playlist ame: " << playlist->m_strName << '\n';
-                std::cout << "id: " << playlist->m_dID << '\n';
+                std::cout << "Freist debug write\n";
+                std::cout << "playlist name: " << playlist->m_strName << '\n';
             }
 
-            Playlist &testPlaylist { *(pPlaylists->at(2)) };
-            std::cout << testPlaylist.m_strName << " not so new name\n";
-            testPlaylist.m_strName = "why no change :(";
-
-            gboolean bSuccess { update_playlist(piTunesDB, testPlaylist, pError) };
+            for (int i { 0 }; i < 5; i++) {
+                Playlist new_playlist {
+                    "Testing playlist",
+                    FALSE,
+                    FALSE,
+                    TRASH_PL_ID
+                };
+                std::cout << new_playlist.m_strName << '\n';
+                add_playlist(piTunesDB, pPlaylists, new_playlist, pError);
+            }
 
             for (const auto& playlist : *pPlaylists) {
-                std::cout << "Playlist ame: " << playlist->m_strName << '\n';
-                std::cout << "id: " << playlist->m_dID << '\n';
+                std::cout << "second debnug writerew\n";
+                std::cout << "playlist name: " << playlist->m_strName << '\n';
+            }
+
+            for(int i { 0 }; i < 4; i++) {
+                Playlist& playlist { *(pPlaylists->back().get()) };
+                gboolean bEntered { remove_playlist(
+                    piTunesDB,
+                    playlist,
+                    pPlaylists,
+                    pError
+                ) };
+
+                if (bEntered)
+                    std::cout << "we remove stuff ig\n";
+
+                if (pError) 
+                    std::cout << "sum went run ig\n";
+            }
+
+            for (const auto& playlist : *pPlaylists) {\
+                std::cout << "LLast dsebug wirtes\n";
+                std::cout << "playlist name: " << playlist->m_strName << '\n';
             }
 
             break;

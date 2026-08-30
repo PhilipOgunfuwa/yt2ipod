@@ -497,6 +497,7 @@ Itdb_Playlist *add_playlist(
     // Add itdb playlist to end of iTunesDB
     itdb_playlist_add(pDB, pPlaylist, END_OF_ITUNESDB);
     std::cout << "Added playlist to iTunesDB";
+    newPlaylist.m_dID = pPlaylist->id;
 
     // Now add playlist to our Playlists buffer
     pPlaylists->push_back(std::move(std::make_unique<Playlist>(newPlaylist)));
