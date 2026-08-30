@@ -103,7 +103,7 @@ gboolean remove_track(
     Playlist& targetPlaylist,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     Track& track,
-    //     std::vector<std::unique_ptr<Track>> *pTracks,
+    std::vector<std::unique_ptr<Track>> *pTracks,
     GError *pError
 );
 

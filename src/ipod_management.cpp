@@ -349,6 +349,7 @@ gboolean remove_track(
     Playlist& targetPlaylist,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     Track& targetTrack,
+    std::vector<std::unique_ptr<Track>> *pTracks,
     GError *pError
 )
 {
@@ -357,8 +358,9 @@ gboolean remove_track(
     assert(pDB && "Passed nullptr for iTunesDB");
     assert(pPlaylists && "Passed nullptr for Playlists");
     assert(!pError && "Passed non nullptr for GError");
+    assert(pTracks && "Passed nullptr for Tracks");
 
-    if (!pDB || !pPlaylists || pError)
+    if (!pDB || !pPlaylists || pError || !pTracks)
         return FALSE;
 
     Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
@@ -438,6 +440,17 @@ gboolean remove_track(
             g_free(strRelSongPath);
         }
 
+        // Now remove target track from our saved tracks
+        for (int i { 0 }; i < pTracks->size(); i++) {
+
+            // Found target track to remove
+            if (pTracks->at(i)->m_dID == targetTrack.m_dID) {
+                auto targetTrackIterator { pTracks->begin() + i };
+                pTracks->erase(targetTrackIterator);
+                break;
+            }
+        }
+
     }
 
     // Remove from single target playlist
@@ -462,15 +475,23 @@ gboolean remove_track(
 
     if (bSuccess) {
         std::cout << "Successfully wrote to iTunesDB\n";
-        return TRUE;
     }
 
     // Failure
-    std::cout << "Failed to write to iTunesDB\n";
-    std::cout << "error: " << pError->message << '\n';
-    return FALSE;
+    else {
+        std::cout << "Failed to write to iTunesDB\n";
+        std::cout << "error: " << pError->message << '\n';
+    }
+
+    return bSuccess;
 }
 
+/// @brief Add playlist to iTunesDB and our internal playlists buffer
+/// @param pDB 
+/// @param pPlaylists 
+/// @param newPlaylist 
+/// @param pError 
+/// @return Returns itdb playlist on success and nullptr if we failed to create it
 Itdb_Playlist *add_playlist(
     Itdb_iTunesDB *pDB,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
@@ -566,6 +587,12 @@ gboolean update_playlist(
     return bUpdated;
 }
 
+/// @brief Remove playlist from iPod
+/// @param pDB 
+/// @param targetPlaylist 
+/// @param pPlaylists 
+/// @param pError 
+/// @return True if we successfully removed playlist and false in all other cases
 gboolean remove_playlist(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
