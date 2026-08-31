@@ -4,6 +4,7 @@
 #include "include/yt2ipod.h"
 #include <iostream>
 #include <cassert>
+#include <array>
 
 // For MP3s
 #define DR_MP3_IMPLEMENTATION
@@ -30,52 +31,84 @@ int main(int argc, char** argv) {
     assert(pPlaylists && "pPlaylists is nullptr");
     assert(piTunesDB && "iTunesDB is nullptr");
 
+    std::array<std::string, 6> songPaths {
+        "/home/philip-o/Desktop/temp for ipod/Music/F01/BFHC.mp3",
+        "/home/philip-o/Desktop/temp for ipod/Music/F01/YTUC.mp3",
+        "/home/philip-o/Desktop/temp for ipod/Music/F00/libgpod826620.mp3",
+        "/home/philip-o/Desktop/temp for ipod/Music/F00/WEUS.mp3",
+        "/home/philip-o/Desktop/temp for ipod/Music/F02/GAGF.mp3",
+        "/home/philip-o/Desktop/temp for ipod/Music/F02/NMBO.mp3"
+    };
+
     if (bSuccess) {
         while (true) {
             std::cout << "Testing iteration\n";
             GError *pError { nullptr };
 
+            int indexToName { 40 };
 
-            for (const auto& playlist : *pPlaylists) {
-                std::cout << "Freist debug write\n";
-                std::cout << "playlist name: " << playlist->m_strName << '\n';
+            for (const auto& track : *pTracks) {
+                std::cout << "track title: " << track->m_strTitle << '\n';
+                std::cout << "track id: " << track->m_dID << '\n';
             }
 
-            for (int i { 0 }; i < 5; i++) {
-                Playlist new_playlist {
-                    "Testing playlist",
-                    FALSE,
-                    FALSE,
-                    TRASH_PL_ID
+            for (const auto& trackID : pPlaylists->front()->m_TrackIDs) {
+                std::cout << "TrackID: " << trackID << '\n';
+            }
+
+
+            for (const auto& path : songPaths) {
+                std::string name { path.substr(indexToName) };
+                Track test_track {
+                    name.c_str(),
+                    "Testing Artist",
+                    "Testing Album",
+                    "Testing Genre",
+                    "",
+                    0,
+                    TRASH_TRACK_ID,
+                    TRUE
                 };
-                std::cout << new_playlist.m_strName << '\n';
-                add_playlist(piTunesDB, pPlaylists, new_playlist, pError);
-            }
 
-            for (const auto& playlist : *pPlaylists) {
-                std::cout << "second debnug writerew\n";
-                std::cout << "playlist name: " << playlist->m_strName << '\n';
-            }
 
-            for(int i { 0 }; i < 4; i++) {
-                Playlist& playlist { *(pPlaylists->back().get()) };
-                gboolean bEntered { remove_playlist(
+                add_new_track(
                     piTunesDB,
-                    playlist,
-                    pPlaylists,
+                    *(pPlaylists->front()),
+                    test_track,
+                    pTracks,
+                    path,
                     pError
-                ) };
-
-                if (bEntered)
-                    std::cout << "we remove stuff ig\n";
-
-                if (pError) 
-                    std::cout << "sum went run ig\n";
+                );
             }
 
-            for (const auto& playlist : *pPlaylists) {\
-                std::cout << "LLast dsebug wirtes\n";
-                std::cout << "playlist name: " << playlist->m_strName << '\n';
+            for (const auto& trackID : pPlaylists->front()->m_TrackIDs) {
+                std::cout << "TrackID: " << trackID << '\n';
+            }
+
+            for (const auto& track : *pTracks) {
+                std::cout << "track title: " << track->m_strTitle << '\n';
+                std::cout << "track id: " << track->m_dID << '\n';
+            }
+
+            for (int i { 0 }; i < 6; i++) {
+                Track& test_track { *(pTracks->back()) };
+                remove_track(
+                    piTunesDB,
+                    *(pPlaylists->front()),
+                    pPlaylists,
+                    test_track,
+                    pTracks,
+                    pError
+                );
+            }
+
+            for (const auto& track : *pTracks) {
+                std::cout << "track title: " << track->m_strTitle << '\n';
+                std::cout << "track id: " << track->m_dID << '\n';
+            }
+
+            for (const auto& trackID : pPlaylists->front()->m_TrackIDs) {
+                std::cout << "TrackID: " << trackID << '\n';
             }
 
             break;

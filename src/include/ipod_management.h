@@ -67,46 +67,6 @@ struct Track {
 
 std::vector<std::unique_ptr<Playlist>> *get_playlists(Itdb_iTunesDB *pDB);
 
-/*
-        Track Functions
-*/
-
-std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
-
-std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
-
-
-// May want to consolidate this into one func (combine w/ add_new_track)
-Itdb_Track *add_track(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    Track& track,
-    GError *pError
-);
-
-Itdb_Track *add_new_track(
-    Itdb_iTunesDB *pDB, 
-    Playlist& targetPlaylist, 
-    Track& newTrack,
-    const std::string& strSrcSongPath,
-    GError *pError
-);
-
-gboolean update_track(
-    Itdb_iTunesDB *pDB,
-    Track& targetTrack,
-    GError *pError
-);
-
-gboolean remove_track(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
-    Track& track,
-    //     std::vector<std::unique_ptr<Track>> *pTracks,
-    GError *pError
-);
-
 Itdb_Playlist *add_playlist(
     Itdb_iTunesDB *pDB,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
@@ -126,5 +86,47 @@ gboolean remove_playlist(
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     GError *pError
 );
+
+/*
+        Track Functions
+*/
+
+std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
+
+std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
+
+// May want to consolidate this into one func (combine w/ add_new_track)
+Itdb_Track *add_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    Track& track,
+    GError *pError
+);
+
+Itdb_Track *add_new_track(
+    Itdb_iTunesDB *pDB, 
+    Playlist& targetPlaylist, 
+    Track& newTrack,
+    std::vector<std::unique_ptr<Track>> *pTracks,
+    const std::string& strSrcSongPath,
+    GError *pError
+);
+
+gboolean update_track(
+    Itdb_iTunesDB *pDB,
+    Track& targetTrack,
+    GError *pError
+);
+
+gboolean remove_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Track& track,
+    std::vector<std::unique_ptr<Track>> *pTracks,
+    GError *pError
+);
+
+
 
 #endif

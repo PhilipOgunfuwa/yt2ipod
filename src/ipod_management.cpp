@@ -182,12 +182,11 @@ Itdb_Track *add_new_track(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
     Track& newTrack,
+    std::vector<std::unique_ptr<Track>> *pTracks,
     const std::string& strSrcSongPath,
     GError *pError
 ) 
 {
-    std::cout << "Adding track to iPod\n";
-
     assert(pDB && "Passed nullptr to for the iTunesDB");
     assert(!pError && "Passed non nullptr for the GError");
 
@@ -209,17 +208,15 @@ Itdb_Track *add_new_track(
 
 
     // Add track to iTunesDB, and then update track to be linked to song and copy to iPod
+    std::cout << "Adding track to iPod\n";
     itdb_track_add(pDB, pTrack, END_OF_ITUNESDB);
 
     // Add track+song file to iPod
     {
         gboolean bSuccess { itdb_cp_track_to_ipod(pTrack, strSrcSongPath.c_str(), &pError) }; 
 
-        
         if (bSuccess) {
             std::cout << "Successfully copied track to iPod\n";
-            // Update id
-            newTrack.m_dID = pTrack->id;
 
             // Update length of track (in ms)
             drmp3 song;
@@ -236,6 +233,13 @@ Itdb_Track *add_new_track(
             newTrack.m_dTrackLen_ms = dTrackLen_ms;
 
             drmp3_uninit(&song);
+
+            // Update song path in our copy of iPod
+            newTrack.m_strIpodPath = pTrack->ipod_path;
+
+            // Add track to our saved version
+            std::unique_ptr<Track> track { std::make_unique<Track>(newTrack) };
+            pTracks->push_back(std::move(track));
         }
 
         else {
@@ -247,8 +251,28 @@ Itdb_Track *add_new_track(
     // Add track to target playlist
     Itdb_Playlist *pTargetPlaylist { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
     itdb_playlist_add_track(pTargetPlaylist, pTrack, END_OF_PL);
-    targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
     std::cout << "Added track to playlist\n";
+
+    {
+        std::cout << "Writing to iTunesDB\n";
+        gboolean bSuccess { itdb_write(pDB, &pError) };
+
+        if (bSuccess) {
+            std::cout << "Successfully wrote to iTunesDB\n";
+        }
+        
+        else {
+            std::cout << "Failed to write to iTunesDB\n";
+            std::cout << "error: " << pError->message << '\n';
+        }
+
+
+        // Update id (Only after an itdb_write is it updated)
+        // this is done deep in some internal function (took min to find)
+        // We could have failed literally anywhere in it so lets hope we got a id :)
+        pTracks->back()->m_dID = pTrack->id;
+        targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
+    }
 
     return pTrack;
 }
@@ -349,6 +373,7 @@ gboolean remove_track(
     Playlist& targetPlaylist,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
     Track& targetTrack,
+    std::vector<std::unique_ptr<Track>> *pTracks,
     GError *pError
 )
 {
@@ -357,8 +382,9 @@ gboolean remove_track(
     assert(pDB && "Passed nullptr for iTunesDB");
     assert(pPlaylists && "Passed nullptr for Playlists");
     assert(!pError && "Passed non nullptr for GError");
+    assert(pTracks && "Passed nullptr for Tracks");
 
-    if (!pDB || !pPlaylists || pError)
+    if (!pDB || !pPlaylists || pError || !pTracks)
         return FALSE;
 
     Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
@@ -371,7 +397,7 @@ gboolean remove_track(
     Itdb_Track *pTargetItdbTrack { itdb_track_by_id(pDB, targetTrack.m_dID) };
 
     if (!pTargetItdbTrack) {
-        std::cout << "Target track \"" << targetTrack.m_dID << "\" is not in iTunesDB\n";
+        std::cout << "Target track \"" << targetTrack.m_strTitle << "\" is not in iTunesDB\n";
         return FALSE;
     }
 
@@ -438,6 +464,17 @@ gboolean remove_track(
             g_free(strRelSongPath);
         }
 
+        // Now remove target track from our saved tracks
+        for (int i { 0 }; i < pTracks->size(); i++) {
+
+            // Found target track to remove
+            if (pTracks->at(i)->m_dID == targetTrack.m_dID) {
+                auto targetTrackIterator { pTracks->begin() + i };
+                pTracks->erase(targetTrackIterator);
+                break;
+            }
+        }
+
     }
 
     // Remove from single target playlist
@@ -462,15 +499,23 @@ gboolean remove_track(
 
     if (bSuccess) {
         std::cout << "Successfully wrote to iTunesDB\n";
-        return TRUE;
     }
 
     // Failure
-    std::cout << "Failed to write to iTunesDB\n";
-    std::cout << "error: " << pError->message << '\n';
-    return FALSE;
+    else {
+        std::cout << "Failed to write to iTunesDB\n";
+        std::cout << "error: " << pError->message << '\n';
+    }
+
+    return bSuccess;
 }
 
+/// @brief Add playlist to iTunesDB and our internal playlists buffer
+/// @param pDB 
+/// @param pPlaylists 
+/// @param newPlaylist 
+/// @param pError 
+/// @return Returns itdb playlist on success and nullptr if we failed to create it
 Itdb_Playlist *add_playlist(
     Itdb_iTunesDB *pDB,
     std::vector<std::unique_ptr<Playlist>> *pPlaylists,
@@ -566,6 +611,12 @@ gboolean update_playlist(
     return bUpdated;
 }
 
+/// @brief Remove playlist from iPod
+/// @param pDB 
+/// @param targetPlaylist 
+/// @param pPlaylists 
+/// @param pError 
+/// @return True if we successfully removed playlist and false in all other cases
 gboolean remove_playlist(
     Itdb_iTunesDB *pDB,
     Playlist& targetPlaylist,
