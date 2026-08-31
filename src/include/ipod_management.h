@@ -48,7 +48,6 @@ struct Track {
           const gchar *strIpodPath,
           gint32 dTrackLen_ms,
           guint32 dID,
-          guint64, dDBID,
           gboolean bTransferred);
 
     std::string m_strTitle; // title of track
@@ -57,8 +56,7 @@ struct Track {
     std::string m_strGenre; // genre of track
     std::string m_strIpodPath; // path of track in ipod
     gint32 m_dTrackLen_ms; // length of track in ms
-    guint32 m_dID; // unique id for track (internal for playlist)
-    guint64 m_dDBID; // unique id for track (internal for iTunesDB)
+    guint32 m_dID; // unique id for track
     gboolean m_bTransferred; // true if track needs to be added to iTunesDB
 };
 

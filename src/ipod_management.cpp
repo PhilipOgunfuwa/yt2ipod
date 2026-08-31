@@ -24,7 +24,6 @@ Track::Track(const gchar *strTitle,
              const gchar *strIpodPath,
              gint32 dTrackLen_ms,
              guint32 dID,
-             guint64 dDBID,
              gboolean bTransferred)
     : m_strTitle { "" }
     , m_strArtist { "" }
@@ -33,7 +32,6 @@ Track::Track(const gchar *strTitle,
     , m_strIpodPath { "" }
     , m_dTrackLen_ms { dTrackLen_ms }
     , m_dID { dID }
-    , m_dBDID { dDBID }
     , m_bTransferred { bTransferred }
 {
 
@@ -164,9 +162,6 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB) {
             FALSE // Track doesn't need added to iTunesDB
         )};
 
-        std::cout << "regular id: " << pCurTrack->id << '\n';
-        std::cout << "dbid: " << pCurTrack->dbid << '\n';
-
         tracks->push_back(std::move(track));
 
         pCurrentNode = pCurrentNode->next;
@@ -222,9 +217,6 @@ Itdb_Track *add_new_track(
 
         if (bSuccess) {
             std::cout << "Successfully copied track to iPod\n";
-            // Update id
-            newTrack.m_dID = pTrack->id;
-            std::cout << "id from itdb: " << pTrack->id << '\n';
 
             // Update length of track (in ms)
             drmp3 song;
@@ -242,6 +234,9 @@ Itdb_Track *add_new_track(
 
             drmp3_uninit(&song);
 
+            // Update song path in our copy of iPod
+            newTrack.m_strIpodPath = pTrack->ipod_path;
+
             // Add track to our saved version
             std::unique_ptr<Track> track { std::make_unique<Track>(newTrack) };
             pTracks->push_back(std::move(track));
@@ -256,7 +251,6 @@ Itdb_Track *add_new_track(
     // Add track to target playlist
     Itdb_Playlist *pTargetPlaylist { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
     itdb_playlist_add_track(pTargetPlaylist, pTrack, END_OF_PL);
-    targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
     std::cout << "Added track to playlist\n";
 
     {
@@ -271,6 +265,13 @@ Itdb_Track *add_new_track(
             std::cout << "Failed to write to iTunesDB\n";
             std::cout << "error: " << pError->message << '\n';
         }
+
+
+        // Update id (Only after an itdb_write is it updated)
+        // this is done deep in some internal function (took min to find)
+        // We could have failed literally anywhere in it so lets hope we got a id :)
+        pTracks->back()->m_dID = pTrack->id;
+        targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
     }
 
     return pTrack;

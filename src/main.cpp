@@ -111,8 +111,6 @@ int main(int argc, char** argv) {
                 std::cout << "TrackID: " << trackID << '\n';
             }
 
-            
-
             break;
         }
     }
