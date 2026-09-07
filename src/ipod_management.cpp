@@ -640,6 +640,11 @@ gboolean remove_track(
 /*
         General Functions
 */
+
+/// @brief Write/save changes to iTunesDB
+/// @param pDB 
+/// @param pError 
+/// @return True on success and failure on failure
 gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError) {
 
     gboolean bSuccess { FALSE };
@@ -660,6 +665,44 @@ gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError) {
 
     else {
         std::cout << "Failed to write to iTunesDB\n";
+        std::cout << "error: " << pError->message << '\n';
+    }
+
+    return bSuccess;
+}
+
+/// @brief Initialize iTunesDB, and directories for blank ipod (Trust caller to do this at right time)
+/// @param strIpodMountPath 
+/// @param strIpodModelNum 
+/// @param strIpodName 
+/// @param pError 
+/// @return True if we successfuly initialized iPod
+gboolean init_blank_ipod(
+    const std::string& strIpodMountPath,
+    const std::string& strIpodModelNum,
+    const std::string& strIpodName,
+    GError *pError
+)
+{
+    const char *_strIpodModelNum { nullptr };
+    
+    // We know the ipod model num
+    if (strIpodModelNum != "") 
+        _strIpodModelNum = strIpodModelNum.c_str();
+
+    gboolean bSuccess { itdb_init_ipod(
+        strIpodMountPath.c_str(),
+        _strIpodModelNum,
+        strIpodName.c_str(),
+        &pError
+    )};
+
+    if (bSuccess) {
+        std::cout << "Successfully initialized blank iPod\n";
+    }
+
+    else {
+        std::cout << "Failed to initialize blank iPod\n";
         std::cout << "error: " << pError->message << '\n';
     }
 
