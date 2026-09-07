@@ -27,9 +27,9 @@ int main(int argc, char** argv) {
 
     gboolean bSuccess { setup(strMountPoint, &piTunesDB, &pPlaylists, &pTracks) };
 
-    assert(pTracks && "pTracks in nullptr");
-    assert(pPlaylists && "pPlaylists is nullptr");
-    assert(piTunesDB && "iTunesDB is nullptr");
+    // assert(pTracks && "pTracks in nullptr");
+    // assert(pPlaylists && "pPlaylists is nullptr");
+    // assert(piTunesDB && "iTunesDB is nullptr");
 
     std::array<std::string, 6> songPaths {
         "/home/philip-o/Desktop/temp for ipod/Music/F01/BFHC.mp3",
@@ -40,76 +40,12 @@ int main(int argc, char** argv) {
         "/home/philip-o/Desktop/temp for ipod/Music/F02/NMBO.mp3"
     };
 
-    if (bSuccess) {
+    if (bSuccess || TRUE) {
         while (true) {
             std::cout << "Testing iteration\n";
             GError *pError { nullptr };
 
-            int indexToName { 40 };
-
-            for (const auto& track : *pTracks) {
-                std::cout << "track title: " << track->m_strTitle << '\n';
-                std::cout << "track id: " << track->m_dID << '\n';
-            }
-
-            for (const auto& trackID : pPlaylists->front()->m_TrackIDs) {
-                std::cout << "TrackID: " << trackID << '\n';
-            }
-
-
-            for (const auto& path : songPaths) {
-                std::string name { path.substr(indexToName) };
-                Track test_track {
-                    name.c_str(),
-                    "Testing Artist",
-                    "Testing Album",
-                    "Testing Genre",
-                    "",
-                    0,
-                    TRASH_TRACK_ID,
-                    TRUE
-                };
-
-
-                add_new_track(
-                    piTunesDB,
-                    *(pPlaylists->front()),
-                    test_track,
-                    pTracks,
-                    path,
-                    pError
-                );
-            }
-
-            for (const auto& trackID : pPlaylists->front()->m_TrackIDs) {
-                std::cout << "TrackID: " << trackID << '\n';
-            }
-
-            for (const auto& track : *pTracks) {
-                std::cout << "track title: " << track->m_strTitle << '\n';
-                std::cout << "track id: " << track->m_dID << '\n';
-            }
-
-            for (int i { 0 }; i < 6; i++) {
-                Track& test_track { *(pTracks->back()) };
-                remove_track(
-                    piTunesDB,
-                    *(pPlaylists->front()),
-                    pPlaylists,
-                    test_track,
-                    pTracks,
-                    pError
-                );
-            }
-
-            for (const auto& track : *pTracks) {
-                std::cout << "track title: " << track->m_strTitle << '\n';
-                std::cout << "track id: " << track->m_dID << '\n';
-            }
-
-            for (const auto& trackID : pPlaylists->front()->m_TrackIDs) {
-                std::cout << "TrackID: " << trackID << '\n';
-            }
+            init_blank_ipod(strMountPoint, "","TESTING PHILIP IPOD :)", pError);
 
             break;
         }

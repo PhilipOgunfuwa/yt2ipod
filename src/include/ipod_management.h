@@ -139,6 +139,11 @@ gboolean remove_track(
 
 gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError);
 
-
+gboolean init_blank_ipod(
+    const std::string& strIpodMountPath,
+    const std::string& strIpodModelNum,
+    const std::string& strIpodName,
+    GError *pError
+);
 
 #endif
