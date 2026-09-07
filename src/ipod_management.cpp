@@ -10,6 +10,50 @@
 #include <array>
 #include <algorithm>
 
+/*
+        Struct/Class Constructors
+*/
+
+/// @brief Initialize a playlist
+/// @param TrackIDs 
+/// @param strName 
+/// @param bIsSmartPL 
+/// @param dID 
+Playlist::Playlist(std::vector<guint32>&& TrackIDs, 
+                   const gchar *strName,
+                   bool bIsMPL, 
+                   bool bIsSmartPL, 
+                   guint64 dID) 
+    : m_TrackIDs { TrackIDs }
+    , m_strName { "" }
+    , m_bIsMPL { bIsMPL }
+    , m_bIsSmartPL { bIsSmartPL }
+    , m_dID { dID }
+{
+    // Turn C-style strings to std::strings if non null
+    if (strName)
+        m_strName = strName;
+}
+
+/// @brief Initialize a playlist (probably new)
+/// @param strName 
+/// @param bIsMPL 
+/// @param bIsSmartPL 
+/// @param dID 
+Playlist::Playlist(const gchar *strName, 
+                   bool bIsMPL,
+                   bool bIsSmartPL, 
+                   guint64 dID)
+    : m_TrackIDs { } // Value initialize vector
+    , m_strName { "" }
+    , m_bIsMPL { bIsMPL }
+    , m_bIsSmartPL { bIsSmartPL }
+    , m_dID { dID }
+{
+    if (strName)
+        m_strName = strName;
+}
+
 /// @brief Initialize a track
 /// @param strTitle 
 /// @param strArtist 
@@ -53,45 +97,9 @@ Track::Track(const gchar *strTitle,
         m_strIpodPath = strIpodPath;
 }
 
-/// @brief Initialize a playlist
-/// @param TrackIDs 
-/// @param strName 
-/// @param bIsSmartPL 
-/// @param dID 
-Playlist::Playlist(std::vector<guint32>&& TrackIDs, 
-                   const gchar *strName,
-                   bool bIsMPL, 
-                   bool bIsSmartPL, 
-                   guint64 dID) 
-    : m_TrackIDs { TrackIDs }
-    , m_strName { "" }
-    , m_bIsMPL { bIsMPL }
-    , m_bIsSmartPL { bIsSmartPL }
-    , m_dID { dID }
-{
-    // Turn C-style strings to std::strings if non null
-    if (strName)
-        m_strName = strName;
-}
-
-/// @brief Initialize a playlist (probably new)
-/// @param strName 
-/// @param bIsMPL 
-/// @param bIsSmartPL 
-/// @param dID 
-Playlist::Playlist(const gchar *strName, 
-                   bool bIsMPL,
-                   bool bIsSmartPL, 
-                   guint64 dID)
-    : m_TrackIDs { } // Value initialize vector
-    , m_strName { "" }
-    , m_bIsMPL { bIsMPL }
-    , m_bIsSmartPL { bIsSmartPL }
-    , m_dID { dID }
-{
-    if (strName)
-        m_strName = strName;
-}
+/*
+        Playlist Functions
+*/
 
 /// @brief Get playlists from iTunesDB
 /// @param pDB 
@@ -131,6 +139,152 @@ std::vector<std::unique_ptr<Playlist>> *get_playlists(Itdb_iTunesDB *pDB) {
     return playlists;
 }
 
+/// @brief Add playlist to iTunesDB and our internal playlists buffer
+/// @param pDB 
+/// @param pPlaylists 
+/// @param newPlaylist 
+/// @param pError 
+/// @return Returns itdb playlist on success and nullptr if we failed to create it
+Itdb_Playlist *add_playlist(
+    Itdb_iTunesDB *pDB,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    Playlist& newPlaylist,
+    GError *pError
+)
+{
+    std::cout << "Adding playlist to iTunesDB\n";
+
+    assert(pDB && "Passed nullptr for iTunesDB");
+    assert(!pError && "Passed nullptr for GError");
+    assert(pPlaylists && "Passed nullptr for Playlists");
+
+    if (!pDB || pError)
+        return nullptr;
+
+    Itdb_Playlist *pPlaylist { itdb_playlist_new(newPlaylist.m_strName.c_str(), newPlaylist.m_bIsSmartPL) };
+
+    if (!pPlaylist)
+        return nullptr;
+
+    pPlaylist->name = g_strdup(newPlaylist.m_strName.c_str());
+
+    // Add itdb playlist to end of iTunesDB
+    itdb_playlist_add(pDB, pPlaylist, END_OF_ITUNESDB);
+    std::cout << "Added playlist to iTunesDB";
+    newPlaylist.m_dID = pPlaylist->id;
+
+    // Now add playlist to our Playlists buffer
+    pPlaylists->push_back(std::move(std::make_unique<Playlist>(newPlaylist)));
+
+    write_to_itunesdb(pDB, pError);
+
+    return pPlaylist;
+}
+
+/// @brief Update itdb playlist so it aligns wit our internal playlist
+/// @param pDB 
+/// @param newPlaylist 
+/// @param pError 
+/// @return Return true on success and false in all other cases
+gboolean update_playlist(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    GError *pError  
+)
+{
+
+    gboolean bUpdated { FALSE };
+
+    assert(pDB && "Passed nullptr for iTunesDB");
+    assert(!pError && "Passed a non nullptr for GError");
+
+    if (!pDB || pError)
+        return bUpdated;
+
+    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
+
+    if (pTargetItdbPl) {
+        std::cout << "Updating playlist\n";
+        // Update playlist with new string (for now this is probably we'll have to do)
+        if (pTargetItdbPl->name)
+            g_free(pTargetItdbPl->name);
+        pTargetItdbPl->name = g_strdup(targetPlaylist.m_strName.c_str());
+
+        // TODO: May want to add adding tracks we haven't added into this yet?
+        // Kinda already handled in add_track()
+
+        bUpdated = write_to_itunesdb(pDB, pError);
+    }
+
+    else {
+        std::cout << "Failed to retrieve playlist from iTunesDB\n";
+    }
+
+    return bUpdated;
+}
+
+/// @brief Remove playlist from iPod
+/// @param pDB 
+/// @param targetPlaylist 
+/// @param pPlaylists 
+/// @param pError 
+/// @return True if we successfully removed playlist and false in all other cases
+gboolean remove_playlist(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
+    GError *pError
+)
+{
+    assert(pDB && "Passed a nullptr for iTunesDB");
+    assert(!pError && "Passed a non ullptr for GError");
+    assert(pPlaylists && "Passed nullptr for Playlists");
+
+    // Preferably lets not let the user remove the Master playlist
+    // We can think about how to handle this another time (Mainly because libgpod/itdb_parse relies ondat)
+    if (!pDB || pError || !pPlaylists || targetPlaylist.m_bIsMPL)
+        return FALSE;
+
+    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
+
+    gboolean bSuccess { FALSE };
+
+    if (pTargetItdbPl) {
+        // Just incase our playlist function doesn't align with our reality
+        if (itdb_playlist_is_mpl(pTargetItdbPl)) {
+            std::cout << "Can't remove master playlist from iPod\n";
+            return FALSE;
+        }
+
+        std::cout << "Removing playlist \"" << targetPlaylist.m_strName << "\" from iTunesDB\n";
+        itdb_playlist_remove(pTargetItdbPl);
+        std::cout << "Removed playlist from iTunesDB\n";
+
+        // Remove playlist on our end
+        // Note we can't remove targetPlaylist with just a reference or index...
+        for (int i { 0 }; i < pPlaylists->size(); i++) {
+            // Found playlist to be removed
+            if (pPlaylists->at(i)->m_dID == targetPlaylist.m_dID) {
+                auto targetElement { pPlaylists->begin() + i };
+                pPlaylists->erase(targetElement);
+                break;
+            }
+        }
+
+        bSuccess = write_to_itunesdb(pDB, pError);
+    }
+
+    else {
+        std::cout << "Failed to get playlist in iTunesDB\n";
+    }
+
+    return bSuccess;
+}
+
+/*
+        Track Functions
+*/
+
 /// @brief Get tracks from iTunesDB
 /// @param pDB 
 /// @return tracks from iTunesDB 
@@ -168,6 +322,35 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB) {
     }
 
     return tracks;
+}
+
+/// @brief Get ids of tracks in Itdb_Playlist
+/// @param pPlaylist 
+/// @return ids of tracks 
+std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist) {
+
+    assert(pPlaylist && "Passed nullptr for Itdb Playlist");
+
+    std::vector<guint32> trackIDs {};
+
+    if (pPlaylist == nullptr)
+        return trackIDs;
+
+    GList *pCurrentNode = pPlaylist->members;
+
+    // Populate buffer of track ids for each track in playlist
+    while (pCurrentNode) {
+        Itdb_Track *pCurrentTrack = static_cast<Itdb_Track *>(pCurrentNode->data);
+
+        // Playlist has track(s)
+        if (pCurrentTrack) {
+            trackIDs.push_back(pCurrentTrack->id);
+        }
+
+        pCurrentNode = pCurrentNode->next;
+    }
+
+    return trackIDs;
 }
 
 /// @brief Adds track to iTunesDB and uses path to a string
@@ -226,7 +409,7 @@ Itdb_Track *add_new_track(
 
             // Size of song is frame count / bit rate
             gint32 dTrackLen_ms = static_cast<gint32>(
-                (dSongFrameCount / dSongBitRate) * 1000
+                (dSongFrameCount / dSongBitRate) * 1000 // to turn into ms
             );
 
             pTrack->tracklen = dTrackLen_ms;
@@ -237,9 +420,9 @@ Itdb_Track *add_new_track(
             // Update song path in our copy of iPod
             newTrack.m_strIpodPath = pTrack->ipod_path;
 
-            // Add track to our saved version
+            // Add track to our internal track buffer
             std::unique_ptr<Track> track { std::make_unique<Track>(newTrack) };
-            pTracks->push_back(std::move(track));
+            pTracks->push_back(std::move(track)); // knowing C++ we don't need std::move as unique_ptrs must use move sematnics
         }
 
         else {
@@ -265,35 +448,11 @@ Itdb_Track *add_new_track(
     return pTrack;
 }
 
-/// @brief Get ids of tracks in Itdb_Playlist
-/// @param pPlaylist 
-/// @return ids of tracks 
-std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist) {
-
-    assert(pPlaylist && "Passed nullptr for Itdb Playlist");
-
-    std::vector<guint32> trackIDs {};
-
-    if (pPlaylist == nullptr)
-        return trackIDs;
-
-    GList *pCurrentNode = pPlaylist->members;
-
-    // Populate buffer of track ids for each track in playlist
-    while (pCurrentNode) {
-        Itdb_Track *pCurrentTrack = static_cast<Itdb_Track *>(pCurrentNode->data);
-
-        // Playlist has track(s)
-        if (pCurrentTrack) {
-            trackIDs.push_back(pCurrentTrack->id);
-        }
-
-        pCurrentNode = pCurrentNode->next;
-    }
-
-    return trackIDs;
-}
-
+/// @brief Update itdb track with our internal track version
+/// @param pDB 
+/// @param targetTrack 
+/// @param pError 
+/// @return True on success and false if we couldn't find it
 gboolean update_track(
     Itdb_iTunesDB *pDB,
     Track& targetTrack,
@@ -456,7 +615,7 @@ gboolean remove_track(
 
     }
 
-    // Remove from single target playlist
+    // Remove from single (non master) target playlist
     else {
         if (itdb_playlist_contains_track(pTargetItdbPl, pTargetItdbTrack)) {
             std::cout << "Removing track \"" << targetTrack.m_strTitle << "\" from \"" << targetPlaylist.m_strName << "\"\n";
@@ -478,145 +637,9 @@ gboolean remove_track(
     return bSuccess;
 }
 
-/// @brief Add playlist to iTunesDB and our internal playlists buffer
-/// @param pDB 
-/// @param pPlaylists 
-/// @param newPlaylist 
-/// @param pError 
-/// @return Returns itdb playlist on success and nullptr if we failed to create it
-Itdb_Playlist *add_playlist(
-    Itdb_iTunesDB *pDB,
-    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
-    Playlist& newPlaylist,
-    GError *pError
-)
-{
-    std::cout << "Adding playlist to iTunesDB\n";
-
-    assert(pDB && "Passed nullptr for iTunesDB");
-    assert(!pError && "Passed nullptr for GError");
-    assert(pPlaylists && "Passed nullptr for Playlists");
-
-    if (!pDB || pError)
-        return nullptr;
-
-    Itdb_Playlist *pPlaylist { itdb_playlist_new(newPlaylist.m_strName.c_str(), newPlaylist.m_bIsSmartPL) };
-
-    if (!pPlaylist)
-        return nullptr;
-
-    pPlaylist->name = g_strdup(newPlaylist.m_strName.c_str());
-
-    // Add itdb playlist to end of iTunesDB
-    itdb_playlist_add(pDB, pPlaylist, END_OF_ITUNESDB);
-    std::cout << "Added playlist to iTunesDB";
-    newPlaylist.m_dID = pPlaylist->id;
-
-    // Now add playlist to our Playlists buffer
-    pPlaylists->push_back(std::move(std::make_unique<Playlist>(newPlaylist)));
-
-    write_to_itunesdb(pDB, pError);
-
-    return pPlaylist;
-}
-
-/// @brief Update playlist
-/// @param pDB 
-/// @param newPlaylist 
-/// @param pError 
-/// @return Return true on success and false in all other cases
-gboolean update_playlist(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    GError *pError  
-)
-{
-
-    gboolean bUpdated { FALSE };
-
-    assert(pDB && "Passed nullptr for iTunesDB");
-    assert(!pError && "Passed a non nullptr for GError");
-
-    if (!pDB || pError)
-        return bUpdated;
-
-    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
-
-    if (pTargetItdbPl) {
-        std::cout << "Updating playlist\n";
-        // Update playlist with new string (for now this is probably we'll have to do)
-        if (pTargetItdbPl->name)
-            g_free(pTargetItdbPl->name);
-        pTargetItdbPl->name = g_strdup(targetPlaylist.m_strName.c_str());
-
-        bUpdated = write_to_itunesdb(pDB, pError);
-    }
-
-    else {
-        std::cout << "Failed to retrieve playlist from iTunesDB\n";
-    }
-
-    return bUpdated;
-}
-
-/// @brief Remove playlist from iPod
-/// @param pDB 
-/// @param targetPlaylist 
-/// @param pPlaylists 
-/// @param pError 
-/// @return True if we successfully removed playlist and false in all other cases
-gboolean remove_playlist(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    std::vector<std::unique_ptr<Playlist>> *pPlaylists,
-    GError *pError
-)
-{
-    assert(pDB && "Passed a nullptr for iTunesDB");
-    assert(!pError && "Passed a non ullptr for GError");
-    assert(pPlaylists && "Passed nullptr for Playlists");
-
-    // Preferably lets not let the user remove the Master playlist
-    // We can think about how to handle this another time (Mainly because libgpod/itdb_parse relies ondat)
-    if (!pDB || pError || !pPlaylists || targetPlaylist.m_bIsMPL)
-        return FALSE;
-
-    Itdb_Playlist *pTargetItdbPl { itdb_playlist_by_id(pDB, targetPlaylist.m_dID) };
-
-    gboolean bSuccess { FALSE };
-
-    if (pTargetItdbPl) {
-        // Just incase our playlist function doesn't align with our reality
-        if (itdb_playlist_is_mpl(pTargetItdbPl)) {
-            std::cout << "Can't remove master playlist from iPod\n";
-            return FALSE;
-        }
-
-        std::cout << "Removing playlist \"" << targetPlaylist.m_strName << "\" from iTunesDB\n";
-        itdb_playlist_remove(pTargetItdbPl);
-        std::cout << "Removed playlist from iTunesDB\n";
-
-        // Remove playlist on our end
-        // Note we can't remove targetPlaylist with just a reference or index...
-        for (int i { 0 }; i < pPlaylists->size(); i++) {
-            // Found playlist to be removed
-            if (pPlaylists->at(i)->m_dID == targetPlaylist.m_dID) {
-                auto targetElement { pPlaylists->begin() + i };
-                pPlaylists->erase(targetElement);
-                break;
-            }
-        }
-
-        bSuccess = write_to_itunesdb(pDB, pError);
-    }
-
-    else {
-        std::cout << "Failed to get playlist in iTunesDB\n";
-    }
-
-    return bSuccess;
-}
-
+/*
+        General Functions
+*/
 gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError) {
 
     gboolean bSuccess { FALSE };

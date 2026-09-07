@@ -6,11 +6,17 @@
 #include <string>
 #include <memory>
 
-
+/*
+        MACRO CONSTANTS
+*/
 #define END_OF_ITUNESDB -1 // Add track to end of itunesdb
 #define END_OF_PL -1
 #define TRASH_TRACK_ID 0xFFFFFFFF
 #define TRASH_PL_ID 0xFFFFFFFFFFFFFFFF
+
+/*
+    Struct/Class Declarations
+*/
 
 struct Playlist; // Basically serves as a way to move between JSON Playlist that frontend uses to backend of itdb
 struct Track; // Basically serves as a way to move between JSON Track that frontend uses to backend of itdb
@@ -95,20 +101,20 @@ std::vector<std::unique_ptr<Track>> *get_tracks(Itdb_iTunesDB *pDB);
 
 std::vector<guint32> get_track_ids(Itdb_Playlist *pPlaylist);
 
-// May want to consolidate this into one func (combine w/ add_new_track)
-Itdb_Track *add_track(
-    Itdb_iTunesDB *pDB,
-    Playlist& targetPlaylist,
-    Track& track,
-    GError *pError
-);
-
-Itdb_Track *add_new_track(
+Itdb_Track *add_new_track( 
     Itdb_iTunesDB *pDB, 
     Playlist& targetPlaylist, 
     Track& newTrack,
     std::vector<std::unique_ptr<Track>> *pTracks,
     const std::string& strSrcSongPath,
+    GError *pError
+);
+
+// Not implemented yet...
+Itdb_Track *add_track(
+    Itdb_iTunesDB *pDB,
+    Playlist& targetPlaylist,
+    Track& track,
     GError *pError
 );
 
@@ -130,6 +136,7 @@ gboolean remove_track(
 /*
         General Functions
 */
+
 gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError);
 
 
