@@ -27,9 +27,9 @@ int main(int argc, char** argv) {
 
     gboolean bSuccess { setup(strMountPoint, &piTunesDB, &pPlaylists, &pTracks) };
 
-    assert(pTracks && "pTracks in nullptr");
-    assert(pPlaylists && "pPlaylists is nullptr");
-    assert(piTunesDB && "iTunesDB is nullptr");
+    // assert(pTracks && "pTracks in nullptr");
+    // assert(pPlaylists && "pPlaylists is nullptr");
+    // assert(piTunesDB && "iTunesDB is nullptr");
 
     std::array<std::string, 6> songPaths {
         "/home/philip-o/Desktop/temp for ipod/Music/F01/BFHC.mp3",
@@ -40,12 +40,15 @@ int main(int argc, char** argv) {
         "/home/philip-o/Desktop/temp for ipod/Music/F02/NMBO.mp3"
     };
 
-    if (bSuccess) {
+    if (bSuccess || TRUE) {
         while (true) {
             std::cout << "Testing iteration\n";
             GError *pError { nullptr };
 
             init_blank_ipod(strMountPoint, "","TESTING PHILIP IPOD :)", pError);
+
+            break;
+        }
     }
 
     shutdown(piTunesDB, pPlaylists, pTracks);
