@@ -253,26 +253,14 @@ Itdb_Track *add_new_track(
     itdb_playlist_add_track(pTargetPlaylist, pTrack, END_OF_PL);
     std::cout << "Added track to playlist\n";
 
-    {
-        std::cout << "Writing to iTunesDB\n";
-        gboolean bSuccess { itdb_write(pDB, &pError) };
 
-        if (bSuccess) {
-            std::cout << "Successfully wrote to iTunesDB\n";
-        }
-        
-        else {
-            std::cout << "Failed to write to iTunesDB\n";
-            std::cout << "error: " << pError->message << '\n';
-        }
+    write_to_itunesdb(pDB, pError);
+    // Update id (Only after an itdb_write is it updated)
+    // this is done deep in some internal function (took min to find)
+    // We could have failed literally anywhere in it so lets hope we got a id :)
+    pTracks->back()->m_dID = pTrack->id;
+    targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
 
-
-        // Update id (Only after an itdb_write is it updated)
-        // this is done deep in some internal function (took min to find)
-        // We could have failed literally anywhere in it so lets hope we got a id :)
-        pTracks->back()->m_dID = pTrack->id;
-        targetPlaylist.m_TrackIDs.push_back(pTrack->id); // Add id to playlist
-    }
 
     return pTrack;
 }
@@ -342,16 +330,7 @@ gboolean update_track(
             g_free(pTargetItdbTrack->genre);
         pTargetItdbTrack->genre = g_strdup(targetTrack.m_strGenre.c_str());
 
-        std::cout << "Writing to iTunesDB\n";
-        bUpdated = itdb_write(pDB, &pError);
-        
-        if (bUpdated) {
-            std::cout << "Succesfully wrote to iTunesDB\n";
-        }
-        else {
-            std::cout << "Failed to write to iTunesDB\n";
-            std::cout << "error: " << pError->message << '\n';
-        }
+        bUpdated = write_to_itunesdb(pDB, pError);
     }
 
     else {
@@ -494,18 +473,7 @@ gboolean remove_track(
         }
     }
 
-    std::cout << "Writing to iTunesDB...\n";
-    gboolean bSuccess { itdb_write(pDB, &pError) };
-
-    if (bSuccess) {
-        std::cout << "Successfully wrote to iTunesDB\n";
-    }
-
-    // Failure
-    else {
-        std::cout << "Failed to write to iTunesDB\n";
-        std::cout << "error: " << pError->message << '\n';
-    }
+    gboolean bSuccess { write_to_itunesdb(pDB, pError) };
 
     return bSuccess;
 }
@@ -547,17 +515,7 @@ Itdb_Playlist *add_playlist(
     // Now add playlist to our Playlists buffer
     pPlaylists->push_back(std::move(std::make_unique<Playlist>(newPlaylist)));
 
-    std::cout << "Writing to iTunesDB\n";
-    gboolean bSuccess { itdb_write(pDB, &pError) };
-    
-    if (bSuccess) {
-        std::cout << "Successfuly wrote to iTunesDB\n";
-    }
-
-    else {
-        std::cout << "Failed to write to iTunesDB\n";
-        std::cout << "error: " << pError->message << '\n';
-    }
+    write_to_itunesdb(pDB, pError);
 
     return pPlaylist;
 }
@@ -591,17 +549,7 @@ gboolean update_playlist(
             g_free(pTargetItdbPl->name);
         pTargetItdbPl->name = g_strdup(targetPlaylist.m_strName.c_str());
 
-        std::cout << "Writing to iTunesDB\n";
-        bUpdated = itdb_write(pDB, &pError);
-
-        if (bUpdated) {
-            std::cout << "Successfully wrote to iTunesDB\n";
-        }
-
-        else {
-            std::cout << "Failed to write to iTunesDB\n";
-            std::cout << "error: " << pError->message << '\n';
-        }
+        bUpdated = write_to_itunesdb(pDB, pError);
     }
 
     else {
@@ -659,21 +607,37 @@ gboolean remove_playlist(
             }
         }
 
-        std::cout << "Writing to iTunesDB\n";
-        bSuccess = itdb_write(pDB, &pError);
-
-        if (bSuccess) {
-            std::cout << "Successfully wrote to iTunesDB\n";
-        }
-
-        else {
-            std::cout << "Failed to write to iTunesDB\n";
-            std::cout << "error: " << pError->message << '\n';
-        }
+        bSuccess = write_to_itunesdb(pDB, pError);
     }
 
     else {
         std::cout << "Failed to get playlist in iTunesDB\n";
+    }
+
+    return bSuccess;
+}
+
+gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError) {
+
+    gboolean bSuccess { FALSE };
+    
+    assert(pDB && "Passed nullptr for iTunesDB");
+    assert(!pError && "Passed non nullptr for GError");
+
+    if (!pDB || pError)
+        return bSuccess;
+
+    std::cout << "Writing to iTunesDB\n";
+
+    bSuccess = itdb_write(pDB, &pError);
+
+    if (bSuccess) {
+        std::cout << "Successfully wrote to iTunesDB\n";
+    }
+
+    else {
+        std::cout << "Failed to write to iTunesDB\n";
+        std::cout << "error: " << pError->message << '\n';
     }
 
     return bSuccess;

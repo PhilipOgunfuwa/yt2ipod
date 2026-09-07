@@ -127,6 +127,11 @@ gboolean remove_track(
     GError *pError
 );
 
+/*
+        General Functions
+*/
+gboolean write_to_itunesdb(Itdb_iTunesDB* pDB, GError *pError);
+
 
 
 #endif
