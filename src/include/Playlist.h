@@ -6,8 +6,10 @@
 #include <string>
 #include <memory>
 #include "Track.h"
+#include "iPod.h"
 
 class Track;
+class iPod;
 
 // You'll note that in the codebase, Itdb_Playlist * are preferred to Playlist when actually
 // manipulating iTunesDB data. We store these things simply so its easier to JSONify them
@@ -30,8 +32,11 @@ public:
     gboolean remove_track(Track& track);
     gboolean contains_track(Track& track) const;
 
+    friend class iPod;
+
 private:
     Itdb_Playlist *__playlist; // Internal playlist
+    Itdb_Playlist *internal_playlist(); // return internal playlist
 };
 
 #endif

@@ -7,6 +7,7 @@
 #include <string_view>
 #include <memory>
 #include "Playlist.h"
+#include "iPod.h"
 
 // You'll note that in the codebase, Itdb_Track * are preferred to Track when actually
 // manipulating iTunesDB data. We store these things simply so its easier to JSONify them
@@ -38,6 +39,7 @@ public:
     gboolean set_id(guint32 id);
     
     friend class Playlist; // Playlists can access internals of a track
+    friend class iPod; // Tracks can access internals of a track
 
 private:
         Itdb_Track *__track; // Internal track

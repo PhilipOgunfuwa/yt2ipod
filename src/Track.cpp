@@ -102,6 +102,5 @@ gboolean Track::set_id(guint32 id) {
 }
 
 Itdb_Track *Track::internal_track() {
-    if (__track) return __track;
-    return NULL;
+    return __track;
 }

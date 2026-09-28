@@ -102,3 +102,7 @@ gboolean Playlist::contains_track(Track& track) const {
 
     return itdb_playlist_contains_track(__playlist, track.internal_track());
 }
+
+Itdb_Playlist *Playlist::internal_playlist() {
+    return __playlist;
+}
