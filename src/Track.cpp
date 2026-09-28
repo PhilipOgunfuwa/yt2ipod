@@ -48,15 +48,6 @@ gboolean Track::set_title(const gchar *title) {
     return FALSE;
 }
 
-gboolean Track::set_title(const gchar *title) {
-    if (__track && title) {
-        __track->title = g_strdup(title);
-        return __track->title != NULL;
-    }
-
-    return FALSE;
-}
-
 gboolean Track::set_artist(const gchar *artist) {
     if (__track && artist) {
         __track->artist = g_strdup(artist);
@@ -108,4 +99,9 @@ gboolean Track::set_id(guint32 id) {
     }
 
     return FALSE;
+}
+
+Itdb_Track *Track::internal_track() {
+    if (__track) return __track;
+    return NULL;
 }

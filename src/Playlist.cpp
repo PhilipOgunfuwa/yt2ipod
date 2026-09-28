@@ -73,12 +73,32 @@ gboolean Playlist::set_id(gint64 id) {
     return FALSE;
 }
 
+gboolean Playlist::add_track(Track& track) {
+    // Overflowed but this will be fixed later
+    if (track.id() == -1 || 
+        !track.internal_track() ||
+        itdb_playlist_contains_track(__playlist, track.internal_track()))
+        return FALSE;
 
-/*
-    gboolean set_name(const gchar *name);
-    gboolean set_is_mpl(gboolean is_mpl);
-    gboolean set_is_smart_pl(gboolean is_smart_pl);
-    gboolean set_id(gint64 id);
-    gboolean add_track(const Track& track);
-    gboolean remove_track(const Track& track);
-*/
+    // Add track to end of playlist
+    itdb_playlist_add_track(__playlist, track.internal_track(), -1);
+
+    return TRUE;
+}
+
+gboolean Playlist::remove_track(Track& track) {
+    if (track.id() == -1 ||
+        !track.internal_track() || 
+        !itdb_playlist_contains_track(__playlist, track.internal_track())) 
+        return FALSE;
+
+    itdb_playlist_remove_track(__playlist, track.internal_track());  
+
+    return TRUE;
+}
+
+gboolean Playlist::contains_track(Track& track) const {
+    if (track.id() == -1 || !track.internal_track()) return FALSE;
+
+    return itdb_playlist_contains_track(__playlist, track.internal_track());
+}

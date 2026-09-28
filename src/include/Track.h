@@ -6,12 +6,19 @@
 #include <string>
 #include <string_view>
 #include <memory>
+#include "Playlist.h"
 
 // You'll note that in the codebase, Itdb_Track * are preferred to Track when actually
 // manipulating iTunesDB data. We store these things simply so its easier to JSONify them
 class Track {
 
 public:
+    // No defined copy/move semantics for now
+    Track(Track&) = delete;
+    Track &operator=(Track&) = delete;
+    Track(Track&&) = delete;
+    Track &operator=(Track&&) = delete;
+
     Track(Itdb_Track *_track);
 
     std::string title() const; // get title of track
@@ -30,9 +37,11 @@ public:
     gboolean set_track_length_ms(gint32 track_length_ms);
     gboolean set_id(guint32 id);
     
+    friend class Playlist; // Playlists can access internals of a track
 
 private:
-        Itdb_Track * __track; // Internal Track
+        Itdb_Track *__track; // Internal track
+        Itdb_Track *internal_track(); // get internal track
 };
 
 #endif
