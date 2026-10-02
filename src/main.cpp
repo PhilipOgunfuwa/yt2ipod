@@ -45,14 +45,22 @@ int main(int argc, char** argv) {
     std::string album { "album" };
     std::string genre { "genre "};
 
-    for (int i { 0 }; i < songPaths.size(); i++) {
-        std::cout << i << '\n';
-        user_iPod->create_track(name, artist, album, genre, songPaths.at(i), mpl_id);
-        std::cout << user_iPod->gpod_error_msg() << '\n';
-        std::cout << i << '\n';
+    std::vector<Track> tracks { user_iPod->tracks() };
+
+    std::cout << user_iPod->create_playlist(name, FALSE) << '\n';;
+    
+    std::vector<Playlist> playlists { user_iPod->playlists() };
+    guint64 new_pl_id { 0 };
+
+    for (const auto& playlist : playlists) {
+        if (playlist.name() == name) new_pl_id = playlist.id();
     }
 
-    user_iPod->write_to_itunesdb();
+    for (int i { 0 }; i < tracks.size(); i++) {
+        std::cout << user_iPod->add_track(tracks.at(i).id(), new_pl_id) << '\n';
+    }
+
+    std::cout << user_iPod->write_to_itunesdb() << '\n';;
 
     return 0;
 }

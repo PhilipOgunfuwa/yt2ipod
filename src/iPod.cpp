@@ -113,6 +113,14 @@ gboolean iPod::track_name_exists(std::string_view track_name) {
     return FALSE;
 }
 
+std::vector<Track> iPod::tracks() const {
+    std::vector<Track> tracks {};
+
+    for (int i { 0 }; i < __tracks.size(); i++) tracks.push_back(*__tracks.at(i));
+
+    return tracks;
+}
+
 Track& iPod::track_by_id(guint32 track_id) {
     for (int i { 0 }; i < __tracks.size(); i++) {
         if (__tracks.at(i)->id() == track_id)
@@ -144,6 +152,14 @@ gboolean iPod::update_playlist(Playlist& target_playlist) {
 
 gboolean iPod::playlist_name_exists(std::string_view playlist_name) {
     return FALSE;
+}
+
+std::vector<Playlist> iPod::playlists() const {
+    std::vector<Playlist> playlists {};
+
+    for (int i { 0 }; i < __playlists.size(); i++) playlists.push_back(*__playlists.at(i));
+
+    return playlists;
 }
 
 Playlist& iPod::playlist_by_id(guint64 playlist_id) {

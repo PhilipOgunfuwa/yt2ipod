@@ -31,12 +31,14 @@ public:
     gboolean remove_track(guint32 track_id, guint64 playlist_id);
     gboolean update_track(guint32 track_id, Track& updated_track);
     gboolean track_name_exists(std::string_view track_name);
+    std::vector<Track> tracks() const;
     
     gboolean create_playlist(std::string& playlist_name, gboolean is_spl);
     gboolean remove_playlist(Playlist& target_playlist);
     gboolean update_playlist(Playlist& target_playlist);
     gboolean playlist_name_exists(std::string_view playlist_name);
     guint64 mpl_playlist_id() const;
+    std::vector<Playlist> playlists() const;
 
     gboolean write_to_itunesdb();
 
