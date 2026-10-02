@@ -31,6 +31,7 @@ iPod::iPod(const gchar *mount_point)
 }
 
 iPod::~iPod() {
+    if (__gpod_error) g_error_free(__gpod_error);
     itdb_free(__iTunesDB);
 }
 
