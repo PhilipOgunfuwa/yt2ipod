@@ -5,6 +5,8 @@ iPod::iPod(const gchar *mount_point)
     , __gpod_error { NULL }
     , __playlists {}
     , __tracks {}
+    , __error_playlist { NULL }
+    , __error_track { NULL }
 {
     if (mount_point) __iTunesDB = itdb_parse(mount_point, &__gpod_error);
 
@@ -15,6 +17,7 @@ iPod::iPod(const gchar *mount_point)
         while (current_node) {
             Itdb_Playlist *current_playlist { static_cast<Itdb_Playlist *>(current_node->data) };
             __playlists.push_back( std::make_unique<Playlist>(current_playlist) );
+            current_node = current_node->next;
         }
 
         current_node = __iTunesDB->tracks;
@@ -22,8 +25,13 @@ iPod::iPod(const gchar *mount_point)
         while (current_node) {
             Itdb_Track *current_track { static_cast<Itdb_Track *>(current_node->data) };
             __tracks.push_back( std::make_unique<Track>(current_track) );
+            current_node = current_node->next;
         }
     }
+}
+
+iPod::~iPod() {
+    itdb_free(__iTunesDB);
 }
 
 gboolean iPod::create_track(std::string& track_name, std::string& track_artist, std::string& track_album,
@@ -67,27 +75,50 @@ gboolean iPod::create_track(std::string& track_name, std::string& track_artist, 
 
         else {
             std::cout << "Failed to copy track to iPod\n";
+            return FALSE;
         }
     }
 
     playlist_by_id(playlist_id).add_track(*new_track);
-    write_to_itunesdb();
+    __tracks.push_back(std::move(new_track));
+    return TRUE;
 }
 
 gboolean iPod::add_track(guint32 track_id, guint64 playlist_id) {
+    
+    Playlist& target_playlist { playlist_by_id(playlist_id) };
+    if (&target_playlist == &__error_playlist) return FALSE;
 
+    Track& target_track { track_by_id(track_id) };
+    if (&target_track == &__error_track) return FALSE;
+
+    target_playlist.add_track(target_track);
+    return TRUE;
 }
 
 gboolean iPod::remove_track(guint32 track_id, guint64 playlist_id) {
-
+    return FALSE;
 }
 
 gboolean iPod::update_track(guint32 track_id, Track& updated_track) {
-
+    return FALSE;
 }
 
 gboolean iPod::track_name_exists(std::string_view track_name) {
+    for (int i { 0 }; i < __tracks.size(); i++)
+        if (__tracks.at(i)->title() == track_name) return TRUE;
 
+
+    return FALSE;
+}
+
+Track& iPod::track_by_id(guint32 track_id) {
+    for (int i { 0 }; i < __tracks.size(); i++) {
+        if (__tracks.at(i)->id() == track_id)
+            return *__tracks.at(i);
+    }
+
+    return __error_track;
 }
 
 gboolean iPod::create_playlist(std::string& playlist_name, gboolean is_spl) {
@@ -97,19 +128,21 @@ gboolean iPod::create_playlist(std::string& playlist_name, gboolean is_spl) {
     std::unique_ptr<Playlist> new_playlist { std::make_unique<Playlist>(_new_playlist) };
     
     itdb_playlist_add(__iTunesDB, new_playlist->internal_playlist(), -1);
-    __playlists.push_back(new_playlist);
+    __playlists.push_back(std::move(new_playlist));
+
+    return TRUE;
 }
 
 gboolean iPod::remove_playlist(Playlist& target_playlist) {
-
+    return FALSE;
 }
 
 gboolean iPod::update_playlist(Playlist& target_playlist) {
-
+    return FALSE;
 }
 
 gboolean iPod::playlist_name_exists(std::string_view playlist_name) {
-
+    return FALSE;
 }
 
 Playlist& iPod::playlist_by_id(guint64 playlist_id) {
@@ -117,6 +150,16 @@ Playlist& iPod::playlist_by_id(guint64 playlist_id) {
         if (__playlists.at(i)->id() == playlist_id)
             return *__playlists.at(i);
     }
+
+    return __error_playlist;
+}
+
+guint64 iPod::mpl_playlist_id() const {
+    for (int i { 0 }; i < __playlists.size(); i++) {
+        if (__playlists.at(i)->is_mpl()) return __playlists.at(i)->id();
+    }
+
+    return -1; // Overflows but this should never really fail
 }
 
 gboolean iPod::write_to_itunesdb() {
@@ -143,6 +186,17 @@ gboolean iPod::write_to_itunesdb() {
     std::cout << "\n\n";
 
     return success;
+}
+
+std::string_view iPod::gpod_error_msg() const {
+    if (!__gpod_error) return "";
+    return __gpod_error->message;
+}
+
+gboolean iPod::reset_gpod_error() {
+    if (!__gpod_error) return FALSE;
+    g_error_free(__gpod_error);
+    return !__gpod_error;
 }
 
 

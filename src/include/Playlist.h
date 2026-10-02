@@ -6,10 +6,6 @@
 #include <string>
 #include <memory>
 #include "Track.h"
-#include "iPod.h"
-
-class Track;
-class iPod;
 
 // You'll note that in the codebase, Itdb_Playlist * are preferred to Playlist when actually
 // manipulating iTunesDB data. We store these things simply so its easier to JSONify them

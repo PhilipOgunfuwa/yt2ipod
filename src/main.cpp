@@ -1,10 +1,11 @@
 // #include "include/httplib.h"
 #include "itdb.h"
-#include "include/ipod_management.h"
-#include "include/yt2ipod.h"
+// #include "include/ipod_management.h"
+// #include "include/yt2ipod.h"
 #include <iostream>
 #include <cassert>
 #include <array>
+#include "include/iPod.h"
 
 // For MP3s
 #define DR_MP3_IMPLEMENTATION
@@ -21,11 +22,10 @@ int main(int argc, char** argv) {
     std::string strMountPoint { argv[1] };
     std::string strPathToSong { argv[2] };
 
-    std::vector<std::unique_ptr<Track>> *pTracks { nullptr };
-    std::vector<std::unique_ptr<Playlist>> *pPlaylists { nullptr };
-    Itdb_iTunesDB *piTunesDB { nullptr };
-
-    gboolean bSuccess { setup(strMountPoint, &piTunesDB, &pPlaylists, &pTracks) };
+    std::cout << "testing :)\n";
+    std::unique_ptr<iPod> user_iPod { std::make_unique<iPod>(strMountPoint.c_str()) };
+    guint64 mpl_id { user_iPod->mpl_playlist_id() };
+    std::cout << "hi playlist\n";
 
     // assert(pTracks && "pTracks in nullptr");
     // assert(pPlaylists && "pPlaylists is nullptr");
@@ -40,18 +40,19 @@ int main(int argc, char** argv) {
         "/home/philip-o/Desktop/temp for ipod/Music/F02/NMBO.mp3"
     };
 
-    if (bSuccess || TRUE) {
-        while (true) {
-            std::cout << "Testing iteration\n";
-            GError *pError { nullptr };
+    std::string name { "name" };
+    std::string artist { "artist"};
+    std::string album { "album" };
+    std::string genre { "genre "};
 
-            init_blank_ipod(strMountPoint, "","TESTING PHILIP IPOD :)", pError);
-
-            break;
-        }
+    for (int i { 0 }; i < songPaths.size(); i++) {
+        std::cout << i << '\n';
+        user_iPod->create_track(name, artist, album, genre, songPaths.at(i), mpl_id);
+        std::cout << user_iPod->gpod_error_msg() << '\n';
+        std::cout << i << '\n';
     }
 
-    shutdown(piTunesDB, pPlaylists, pTracks);
+    user_iPod->write_to_itunesdb();
 
     return 0;
 }

@@ -6,19 +6,12 @@
 #include <string>
 #include <string_view>
 #include <memory>
-#include "Playlist.h"
-#include "iPod.h"
 
 // You'll note that in the codebase, Itdb_Track * are preferred to Track when actually
 // manipulating iTunesDB data. We store these things simply so its easier to JSONify them
 class Track {
 
 public:
-    // No defined copy/move semantics for now
-    Track(Track&) = delete;
-    Track &operator=(Track&) = delete;
-    Track(Track&&) = delete;
-    Track &operator=(Track&&) = delete;
 
     Track(Itdb_Track *_track);
 
