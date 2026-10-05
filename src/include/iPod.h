@@ -31,13 +31,14 @@ public:
                           std::string& track_genre, std::string& song_path); // Create track, and add song to iPod filesystem
     gboolean add_track_to_pl(guint32 track_id, guint64 playlist_id); // Add already created track to a playlist
     gboolean remove_track_from_pl(guint32 track_id, guint64 playlist_id); // Remove a track from a playlist (if mpl remove from iPod)
-    gboolean update_track(guint32 track_id, Track& updated_track); // Update data in track
+    gboolean update_track(guint32 track_id, std::string& track_name, std::string& track_artist, 
+                          std::string& track_album, std::string& track_genre); // Update data in track
     gboolean track_name_exists(std::string_view track_name); // See if track with same name exists
     std::vector<Track> tracks() const; // Get copy of all tracks
     
     gboolean create_playlist(std::string& playlist_name, gboolean is_spl); // Create playlist
     gboolean remove_playlist(guint64 playlist_id); // Remove playlist
-    gboolean update_playlist(guint64 playlist_id, const std::string& new_name, ); // Update playlist data
+    gboolean update_playlist(guint64 playlist_id, std::string& name, gboolean is_spl); // Update playlist data
     gboolean playlist_name_exists(std::string_view playlist_name); // See if playlist with same name exists
     guint64 mpl_id() const; // Get id of master playlist 
     std::vector<Playlist> playlists() const; // Get copy of all playlists

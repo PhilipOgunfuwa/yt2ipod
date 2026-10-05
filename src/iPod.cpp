@@ -162,9 +162,35 @@ gboolean iPod::remove_track_from_pl(guint32 track_id, guint64 playlist_id) {
     return TRUE;
 }
 
-gboolean iPod::update_track(guint32 track_id, Track& updated_track) {
-        //TODO
-    return FALSE;
+gboolean iPod::update_track(guint32 track_id, std::string& track_name, std::string& track_artist, 
+                            std::string& track_album, std::string& track_genre)
+{
+    Track& track { track_by_id(track_id) };
+    if (&track == &__error_track) return FALSE;
+
+    // Deal with duplicate track names
+    if (track_name_exists(track_name)) {
+        int duplicate_num { 1 };
+        std::string dup_name { track_name };
+
+        while (track_name_exists(dup_name)) {
+            // Build new duplicate name
+            dup_name = track_name;
+            dup_name.push_back('(');
+            dup_name.append(std::to_string(duplicate_num));
+            dup_name.push_back(')');
+
+            duplicate_num++;
+        }
+
+        track.set_title(dup_name.c_str());
+    }
+
+    track.set_artist(track_artist.c_str());
+    track.set_album(track_album.c_str());
+    track.set_genre(track_genre.c_str());
+
+    return TRUE;
 }
 
 gboolean iPod::track_name_exists(std::string_view track_name) {
@@ -223,13 +249,32 @@ gboolean iPod::remove_playlist(guint64 playlist_id) {
     return FALSE;
 }
 
-gboolean iPod::update_playlist(guint64 playlist_id, Playlist& target_playlist) {
+gboolean iPod::update_playlist(guint64 playlist_id, std::string& name, gboolean is_spl) {
     Playlist& playlist { playlist_by_id(playlist_id) };
-
     if (&playlist == &__error_playlist) return FALSE;
 
 
-    return FALSE;
+    // Deal with duplicate playlist names
+    if (track_name_exists(name)) {
+        int duplicate_num { 1 };
+        std::string dup_name { name };
+
+        while (track_name_exists(dup_name)) {
+            // Build new duplicate name
+            dup_name = name;
+            dup_name.push_back('(');
+            dup_name.append(std::to_string(duplicate_num));
+            dup_name.push_back(')');
+
+            duplicate_num++;
+        }
+
+        playlist.set_name(dup_name.c_str());
+    }
+    
+    playlist.set_is_smart_pl(is_spl);
+
+    return TRUE;
 }
 
 gboolean iPod::playlist_name_exists(std::string_view playlist_name) {
