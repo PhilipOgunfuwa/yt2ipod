@@ -271,7 +271,7 @@ gboolean iPod::update_playlist(guint64 playlist_id, std::string& name, gboolean 
 
         playlist.set_name(dup_name.c_str());
     }
-    
+
     playlist.set_is_smart_pl(is_spl);
 
     return TRUE;
