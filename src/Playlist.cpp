@@ -46,6 +46,10 @@ std::vector<guint32> Playlist::track_ids() const {
     return _track_ids;
 }
 
+gboolean Playlist::operator==(const Playlist& other) const {
+    return id() == other.id();
+}
+
 gboolean Playlist::set_name(const gchar *name) {
     if (__playlist && name) {
         __playlist->name = g_strdup(name);

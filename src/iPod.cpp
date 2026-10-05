@@ -5,6 +5,7 @@ iPod::iPod(const gchar *mount_point)
     , __gpod_error { NULL }
     , __playlists {}
     , __tracks {}
+    , __master_playlist { NULL }
     , __error_playlist { NULL }
     , __error_track { NULL }
 {
@@ -17,6 +18,9 @@ iPod::iPod(const gchar *mount_point)
         while (current_node) {
             Itdb_Playlist *current_playlist { static_cast<Itdb_Playlist *>(current_node->data) };
             __playlists.push_back( std::make_unique<Playlist>(current_playlist) );
+            // Last playlist we just added is iPod's master playlist
+            if (!__master_playlist && __playlists.back()->is_mpl()) 
+                __master_playlist = __playlists.back().get();
             current_node = current_node->next;
         }
 
@@ -32,12 +36,13 @@ iPod::iPod(const gchar *mount_point)
 
 iPod::~iPod() {
     if (__gpod_error) g_error_free(__gpod_error);
-    itdb_free(__iTunesDB);
+    itdb_free(__iTunesDB); // This frees all internal itdb objects so we don't have to :)
+    // let std::unique_ptr deallocate memory itself
 }
 
 gboolean iPod::create_track(std::string& track_name, std::string& track_artist, std::string& track_album,
-                            std::string& track_genre, std::string& song_path, guint64 playlist_id) {
-    if (!__iTunesDB || !itdb_playlist_by_id(__iTunesDB, playlist_id)) return FALSE;
+                            std::string& track_genre, std::string& song_path) {
+    if (!__iTunesDB || !__master_playlist) return FALSE;
 
     Itdb_Track *_new_track { itdb_track_new() };
     std::unique_ptr<Track> new_track { std::make_unique<Track>(_new_track) };
@@ -80,13 +85,13 @@ gboolean iPod::create_track(std::string& track_name, std::string& track_artist, 
         }
     }
 
-    playlist_by_id(playlist_id).add_track(*new_track);
+    __master_playlist->add_track(*new_track);
     __tracks.push_back(std::move(new_track));
     return TRUE;
 }
 
-gboolean iPod::add_track(guint32 track_id, guint64 playlist_id) {
-    
+gboolean iPod::add_track_to_pl(guint32 track_id, guint64 playlist_id) {
+
     Playlist& target_playlist { playlist_by_id(playlist_id) };
     if (&target_playlist == &__error_playlist) return FALSE;
 
@@ -97,11 +102,68 @@ gboolean iPod::add_track(guint32 track_id, guint64 playlist_id) {
     return TRUE;
 }
 
-gboolean iPod::remove_track(guint32 track_id, guint64 playlist_id) {
-    return FALSE;
+gboolean iPod::remove_track_from_pl(guint32 track_id, guint64 playlist_id) {
+
+    Track& track { track_by_id(track_id) };
+    if (&track == &__error_track) return FALSE;
+
+    gboolean success { FALSE };
+
+    // Remove track from ipod
+    if (mpl_id() == playlist_id) {
+        if (!__iTunesDB) return FALSE;
+
+        // Remove track from any other playlists
+        for (auto& playlist : __playlists) {
+            if (playlist->contains_track(track)) playlist->remove_track(track);
+        }
+
+        const gchar *iPod_mount_path { itdb_get_mountpoint(__iTunesDB) };
+        gchar *rel_song_path { g_strdup(track.iPod_path().c_str()) }; // We need to free this
+
+
+        // We have all the data we need
+        if (iPod_mount_path && rel_song_path) {
+            itdb_filename_ipod2fs(rel_song_path); // iPod uses ':' as file dir deliminator. This swaps back to '/'
+            gchar *abs_song_path { g_strconcat(iPod_mount_path, rel_song_path, NULL) }; // we need to free this
+            std::filesystem::path song_path { abs_song_path };
+            success = std::filesystem::remove(song_path);
+            g_free(abs_song_path); // Free string
+        }
+
+        g_free(rel_song_path); // Free string
+
+        if (success) { // Only do if we actually removed song file
+            itdb_track_remove(track.internal_track()); // Free track & remove from iTunesDB
+            
+            // Remove track from saved internal tracks
+            for (int i { 0 }; i < __tracks.size(); i++) {
+                if (__tracks.at(i)->id() == track.id()) {
+                    __tracks.erase(__tracks.begin()+i);
+                    break;
+                }
+            }
+
+            write_to_itunesdb(); // We write because this is very final (removing song file)
+            // if we didn't write then if they rebooted after this, technically the track would still exist on
+            // next time they pulled it up (but with song file gone!)
+            // be sure to ask user if they are 100% sure to remove from mpl
+        }
+    }
+
+    // Remove track from playlist
+    else {
+        Playlist& playlist { playlist_by_id(playlist_id) };
+        if (&playlist == &__error_playlist) return FALSE;
+        if (!playlist.contains_track(track)) return FALSE;
+        success = playlist.remove_track(track);
+    }
+
+    return TRUE;
 }
 
 gboolean iPod::update_track(guint32 track_id, Track& updated_track) {
+        //TODO
     return FALSE;
 }
 
@@ -142,15 +204,39 @@ gboolean iPod::create_playlist(std::string& playlist_name, gboolean is_spl) {
     return TRUE;
 }
 
-gboolean iPod::remove_playlist(Playlist& target_playlist) {
+gboolean iPod::remove_playlist(guint64 playlist_id) {
+    if (!__iTunesDB || playlist_id == mpl_id()) return FALSE;
+
+    Playlist& playlist { playlist_by_id(playlist_id) };
+    if (&playlist == &__error_playlist) return FALSE;
+
+    itdb_playlist_remove(playlist.internal_playlist());
+
+    // Remove playlist from out internal playlists
+    for (int i { 0 }; i < __playlists.size(); i++) {
+        if (__playlists.at(i)->id() == playlist.id()) {
+            __playlists.erase(__playlists.begin()+i);
+            return TRUE;
+        }
+    }
+
     return FALSE;
 }
 
-gboolean iPod::update_playlist(Playlist& target_playlist) {
+gboolean iPod::update_playlist(guint64 playlist_id, Playlist& target_playlist) {
+    Playlist& playlist { playlist_by_id(playlist_id) };
+
+    if (&playlist == &__error_playlist) return FALSE;
+
+
     return FALSE;
 }
 
 gboolean iPod::playlist_name_exists(std::string_view playlist_name) {
+    for (int i { 0 }; i < __playlists.size(); i++) {
+        if (__playlists.at(i)->name() == playlist_name) return TRUE;
+    }
+
     return FALSE;
 }
 
@@ -171,10 +257,8 @@ Playlist& iPod::playlist_by_id(guint64 playlist_id) {
     return __error_playlist;
 }
 
-guint64 iPod::mpl_playlist_id() const {
-    for (int i { 0 }; i < __playlists.size(); i++) {
-        if (__playlists.at(i)->is_mpl()) return __playlists.at(i)->id();
-    }
+guint64 iPod::mpl_id() const {
+    if (__master_playlist) return __master_playlist->id();
 
     return -1; // Overflows but this should never really fail
 }

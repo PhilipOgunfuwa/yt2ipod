@@ -22,6 +22,7 @@ public:
     std::string iPod_path() const; // get path of track in ipod (: seperated)
     gint32 track_length_ms() const; // get track length in milliseconds
     guint32 id() const; // get unique id for track
+    gboolean operator==(const Track& other) const;
 
     gboolean set_title(const gchar *title);
     gboolean set_artist(const gchar *artist);

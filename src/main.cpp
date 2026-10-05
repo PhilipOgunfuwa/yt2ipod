@@ -24,7 +24,6 @@ int main(int argc, char** argv) {
 
     std::cout << "testing :)\n";
     std::unique_ptr<iPod> user_iPod { std::make_unique<iPod>(strMountPoint.c_str()) };
-    guint64 mpl_id { user_iPod->mpl_playlist_id() };
     std::cout << "hi playlist\n";
 
     // assert(pTracks && "pTracks in nullptr");
@@ -47,17 +46,15 @@ int main(int argc, char** argv) {
 
     std::vector<Track> tracks { user_iPod->tracks() };
 
-    std::cout << user_iPod->create_playlist(name, FALSE) << '\n';;
-    
     std::vector<Playlist> playlists { user_iPod->playlists() };
-    guint64 new_pl_id { 0 };
+    guint64 pl_id { 0 };
 
     for (const auto& playlist : playlists) {
-        if (playlist.name() == name) new_pl_id = playlist.id();
+        if (!playlist.is_mpl()) pl_id = playlist.id();
     }
 
     for (int i { 0 }; i < tracks.size(); i++) {
-        std::cout << user_iPod->add_track(tracks.at(i).id(), new_pl_id) << '\n';
+        std::cout << user_iPod->remove_track_from_pl(tracks.at(i).id(), user_iPod->mpl_id());
     }
 
     std::cout << user_iPod->write_to_itunesdb() << '\n';;
