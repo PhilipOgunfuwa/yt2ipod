@@ -30,13 +30,9 @@ int main(int argc, char** argv) {
     // assert(pPlaylists && "pPlaylists is nullptr");
     // assert(piTunesDB && "iTunesDB is nullptr");
 
-    std::array<std::string, 6> songPaths {
-        "/home/philip-o/Desktop/temp for ipod/Music/F01/BFHC.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F01/YTUC.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F00/libgpod826620.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F00/WEUS.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F02/GAGF.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F02/NMBO.mp3"
+    std::array<std::string, 2> songPaths {
+        "/home/philip-o/Desktop/ipod stuff/Malcolm Todd - Gun To My Head (Official Visualizer) [youaretube.com].mp3",
+        "/home/philip-o/Desktop/ipod stuff/Malcolm Todd - Gun To My Head (Official Visualizer) [youaretube.com].mp3"
     };
 
     std::string name { "name" };
@@ -44,20 +40,11 @@ int main(int argc, char** argv) {
     std::string album { "album" };
     std::string genre { "genre "};
 
-    std::vector<Track> tracks { user_iPod->tracks() };
-
-    std::vector<Playlist> playlists { user_iPod->playlists() };
     guint64 pl_id { 0 };
 
-    for (const auto& playlist : playlists) {
-        if (!playlist.is_mpl()) pl_id = playlist.id();
-    }
-
-    for (int i { 0 }; i < tracks.size(); i++) {
-        std::cout << user_iPod->remove_track_from_pl(tracks.at(i).id(), user_iPod->mpl_id());
-    }
-
-    std::cout << user_iPod->write_to_itunesdb() << '\n';;
+    for (int i { 0 }; i < 100; i++) user_iPod->create_playlist(name, FALSE);
+    user_iPod->write_to_itunesdb();
+    
 
     return 0;
 }

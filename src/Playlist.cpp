@@ -30,16 +30,16 @@ std::vector<guint32> Playlist::track_ids() const {
 
     if (__playlist) {
         // Get track ids in playlist
-        GList *pCurrentNode = __playlist->members;
+        GList *current_node = __playlist->members;
 
         // Populate buffer of track ids for each track in playlist
-        while (pCurrentNode) {
-            Itdb_Track *pCurrentTrack = static_cast<Itdb_Track *>(pCurrentNode->data);
+        while (current_node) {
+            Itdb_Track *current_track = static_cast<Itdb_Track *>(current_node->data);
 
             // Playlist has track(s)
-            if (pCurrentTrack) _track_ids.push_back(pCurrentTrack->id);
+            if (current_track) _track_ids.push_back(current_track->id);
 
-            pCurrentNode = pCurrentNode->next;
+            current_node = current_node->next;
         }
     }
 

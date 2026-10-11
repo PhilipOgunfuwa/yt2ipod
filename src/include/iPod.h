@@ -57,6 +57,8 @@ private:
     Playlist *__master_playlist; // Master playlist that ALL iPods must have
     Playlist __error_playlist; // Playlist returned when error occurs finding one (DNE)
     Track __error_track; // Track returned when error occurs finding one (DNE)
+    std::string append_duplicate_num_to_name_track(std::string track_name); // Add number indicating its a duplicate
+    std::string append_duplicate_num_to_name_playlist(std::string pl_name); // Add number indicating its a duplicate
     Track& track_by_id(guint32 track_id); // Get reference to iPod track (instead of copy)
     Playlist& playlist_by_id(guint64 playlist_id); // Get reference to iPod playlist (instead of copy)
 };

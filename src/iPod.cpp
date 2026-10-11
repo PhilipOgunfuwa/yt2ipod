@@ -47,7 +47,8 @@ gboolean iPod::create_track(std::string& track_name, std::string& track_artist, 
     Itdb_Track *_new_track { itdb_track_new() };
     std::unique_ptr<Track> new_track { std::make_unique<Track>(_new_track) };
 
-    new_track->set_title(track_name.c_str());
+    if (track_name_exists(track_name)) new_track->set_title(append_duplicate_num_to_name_track(track_name).c_str());
+    else new_track->set_title(track_name.c_str());
     new_track->set_artist(track_artist.c_str());
     new_track->set_album(track_album.c_str());
     new_track->set_genre(track_album.c_str());
@@ -98,11 +99,12 @@ gboolean iPod::add_track_to_pl(guint32 track_id, guint64 playlist_id) {
     Track& target_track { track_by_id(track_id) };
     if (&target_track == &__error_track) return FALSE;
 
-    target_playlist.add_track(target_track);
-    return TRUE;
+    return target_playlist.add_track(target_track);
 }
 
 gboolean iPod::remove_track_from_pl(guint32 track_id, guint64 playlist_id) {
+
+    if (!__iTunesDB) return FALSE;
 
     Track& track { track_by_id(track_id) };
     if (&track == &__error_track) return FALSE;
@@ -111,7 +113,6 @@ gboolean iPod::remove_track_from_pl(guint32 track_id, guint64 playlist_id) {
 
     // Remove track from ipod
     if (mpl_id() == playlist_id) {
-        if (!__iTunesDB) return FALSE;
 
         // Remove track from any other playlists
         for (auto& playlist : __playlists) {
@@ -159,7 +160,7 @@ gboolean iPod::remove_track_from_pl(guint32 track_id, guint64 playlist_id) {
         success = playlist.remove_track(track);
     }
 
-    return TRUE;
+    return success;
 }
 
 gboolean iPod::update_track(guint32 track_id, std::string& track_name, std::string& track_artist, 
@@ -169,23 +170,8 @@ gboolean iPod::update_track(guint32 track_id, std::string& track_name, std::stri
     if (&track == &__error_track) return FALSE;
 
     // Deal with duplicate track names
-    if (track_name_exists(track_name)) {
-        int duplicate_num { 1 };
-        std::string dup_name { track_name };
-
-        while (track_name_exists(dup_name)) {
-            // Build new duplicate name
-            dup_name = track_name;
-            dup_name.push_back('(');
-            dup_name.append(std::to_string(duplicate_num));
-            dup_name.push_back(')');
-
-            duplicate_num++;
-        }
-
-        track.set_title(dup_name.c_str());
-    }
-
+    if (track_name_exists(track_name)) track.set_title(append_duplicate_num_to_name_track(track_name).c_str());
+    else track.set_title(track_name.c_str());
     track.set_artist(track_artist.c_str());
     track.set_album(track_album.c_str());
     track.set_genre(track_genre.c_str());
@@ -209,6 +195,23 @@ std::vector<Track> iPod::tracks() const {
     return tracks;
 }
 
+std::string iPod::append_duplicate_num_to_name_track(std::string track_name) {
+    int duplicate_num { 1 };
+    std::string dup_name { track_name };
+
+    while (track_name_exists(dup_name)) {
+        // Build new duplicate name
+        dup_name = track_name;
+        dup_name.push_back('(');
+        dup_name.append(std::to_string(duplicate_num));
+        dup_name.push_back(')');
+
+        duplicate_num++;
+    }
+
+    return dup_name;
+}
+
 Track& iPod::track_by_id(guint32 track_id) {
     for (int i { 0 }; i < __tracks.size(); i++) {
         if (__tracks.at(i)->id() == track_id)
@@ -221,7 +224,9 @@ Track& iPod::track_by_id(guint32 track_id) {
 gboolean iPod::create_playlist(std::string& playlist_name, gboolean is_spl) {
     if (!__iTunesDB) return FALSE;
 
-    Itdb_Playlist *_new_playlist { itdb_playlist_new(playlist_name.c_str(), is_spl) };
+    std::string _playlist_name { playlist_name };
+    if (playlist_name_exists(playlist_name)) _playlist_name = append_duplicate_num_to_name_playlist(_playlist_name);
+    Itdb_Playlist *_new_playlist { itdb_playlist_new(_playlist_name.c_str(), is_spl) };
     std::unique_ptr<Playlist> new_playlist { std::make_unique<Playlist>(_new_playlist) };
     
     itdb_playlist_add(__iTunesDB, new_playlist->internal_playlist(), -1);
@@ -255,22 +260,8 @@ gboolean iPod::update_playlist(guint64 playlist_id, std::string& name, gboolean 
 
 
     // Deal with duplicate playlist names
-    if (track_name_exists(name)) {
-        int duplicate_num { 1 };
-        std::string dup_name { name };
-
-        while (track_name_exists(dup_name)) {
-            // Build new duplicate name
-            dup_name = name;
-            dup_name.push_back('(');
-            dup_name.append(std::to_string(duplicate_num));
-            dup_name.push_back(')');
-
-            duplicate_num++;
-        }
-
-        playlist.set_name(dup_name.c_str());
-    }
+    if (playlist_name_exists(name)) playlist.set_name(append_duplicate_num_to_name_playlist(name).c_str());
+    else playlist.set_name(name.c_str());
 
     playlist.set_is_smart_pl(is_spl);
 
@@ -291,6 +282,23 @@ std::vector<Playlist> iPod::playlists() const {
     for (int i { 0 }; i < __playlists.size(); i++) playlists.push_back(*__playlists.at(i));
 
     return playlists;
+}
+
+std::string iPod::append_duplicate_num_to_name_playlist(std::string pl_name) {
+    int duplicate_num { 1 };
+    std::string dup_name { pl_name };
+
+    while (playlist_name_exists(dup_name)) {
+        // Build new duplicate name
+        dup_name = pl_name;
+        dup_name.push_back('(');
+        dup_name.append(std::to_string(duplicate_num));
+        dup_name.push_back(')');
+
+        duplicate_num++;
+    }
+
+    return dup_name;
 }
 
 Playlist& iPod::playlist_by_id(guint64 playlist_id) {
@@ -344,26 +352,3 @@ gboolean iPod::reset_gpod_error() {
     g_error_free(__gpod_error);
     return !__gpod_error;
 }
-
-
-/*
-
-    iPod(std::string_view mount_point);
-    ~iPod();
-
-    gboolean add_track(Track& new_track, Playlist& target_playlist);
-    gboolean remove_track(Track& new_track, Playlist& target_playlist);
-    gboolean update_track(Track& target_track);
-    gboolean track_name_exists(std::string_view track_name);
-
-    gboolean add_playlist(Playlist& new_playlist);
-    gboolean remove_playlist(Playlist& target_playlist);
-    gboolean update_playlist(Playlist& target_playlist);
-    gboolean playlist_name_exists(std::string_view playlist_name);
-
-
-private:
-    Itdb_iTunesDB *__iTunesDB;
-    std::vector<std::unique_ptr<Playlist>> __playlists;
-    std::vector<std::unique_ptr<Track>> __tracks;
-    */
