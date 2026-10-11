@@ -39,6 +39,9 @@ guint32 Track::id() const {
     return -1; // Will over flow but it doesn't really matter
 }
 
+gboolean Track::operator==(const Track& other) const { 
+    return id() == other.id();
+}
 gboolean Track::set_title(const gchar *title) {
     if (__track && title) {
         __track->title = g_strdup(title);
@@ -102,6 +105,5 @@ gboolean Track::set_id(guint32 id) {
 }
 
 Itdb_Track *Track::internal_track() {
-    if (__track) return __track;
-    return NULL;
+    return __track;
 }

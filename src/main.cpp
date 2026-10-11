@@ -1,10 +1,11 @@
 // #include "include/httplib.h"
 #include "itdb.h"
-#include "include/ipod_management.h"
-#include "include/yt2ipod.h"
+// #include "include/ipod_management.h"
+// #include "include/yt2ipod.h"
 #include <iostream>
 #include <cassert>
 #include <array>
+#include "include/iPod.h"
 
 // For MP3s
 #define DR_MP3_IMPLEMENTATION
@@ -21,37 +22,29 @@ int main(int argc, char** argv) {
     std::string strMountPoint { argv[1] };
     std::string strPathToSong { argv[2] };
 
-    std::vector<std::unique_ptr<Track>> *pTracks { nullptr };
-    std::vector<std::unique_ptr<Playlist>> *pPlaylists { nullptr };
-    Itdb_iTunesDB *piTunesDB { nullptr };
-
-    gboolean bSuccess { setup(strMountPoint, &piTunesDB, &pPlaylists, &pTracks) };
+    std::cout << "testing :)\n";
+    std::unique_ptr<iPod> user_iPod { std::make_unique<iPod>(strMountPoint.c_str()) };
+    std::cout << "hi playlist\n";
 
     // assert(pTracks && "pTracks in nullptr");
     // assert(pPlaylists && "pPlaylists is nullptr");
     // assert(piTunesDB && "iTunesDB is nullptr");
 
-    std::array<std::string, 6> songPaths {
-        "/home/philip-o/Desktop/temp for ipod/Music/F01/BFHC.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F01/YTUC.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F00/libgpod826620.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F00/WEUS.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F02/GAGF.mp3",
-        "/home/philip-o/Desktop/temp for ipod/Music/F02/NMBO.mp3"
+    std::array<std::string, 2> songPaths {
+        "/home/philip-o/Desktop/ipod stuff/Malcolm Todd - Gun To My Head (Official Visualizer) [youaretube.com].mp3",
+        "/home/philip-o/Desktop/ipod stuff/Malcolm Todd - Gun To My Head (Official Visualizer) [youaretube.com].mp3"
     };
 
-    if (bSuccess || TRUE) {
-        while (true) {
-            std::cout << "Testing iteration\n";
-            GError *pError { nullptr };
+    std::string name { "name" };
+    std::string artist { "artist"};
+    std::string album { "album" };
+    std::string genre { "genre "};
 
-            init_blank_ipod(strMountPoint, "","TESTING PHILIP IPOD :)", pError);
+    guint64 pl_id { 0 };
 
-            break;
-        }
-    }
-
-    shutdown(piTunesDB, pPlaylists, pTracks);
+    for (int i { 0 }; i < 100; i++) user_iPod->create_playlist(name, FALSE);
+    user_iPod->write_to_itunesdb();
+    
 
     return 0;
 }
