@@ -18,10 +18,10 @@ class iPod {
 public:
 
     // No copy/move semantics for now
-    iPod(iPod&) = delete;
-    iPod &operator=(iPod&) = delete;
-    iPod(iPod&&) = delete;
-    iPod &operator-(iPod&&) = delete;
+    // iPod(iPod&) = delete;
+    // iPod &operator=(iPod&) = delete;
+    // iPod(iPod&&) = delete;
+    // iPod &operator=(iPod&&) = delete;
 
     // Simply const char * b/c itdb_parse uses that
     iPod(const gchar *mount_point);
@@ -48,6 +48,8 @@ public:
     std::string_view gpod_error_msg() const; // Get message from gpod error if any
 
     gboolean reset_gpod_error(); // Reset gpod error
+    
+    gboolean ok() const; // returns true if iPod is ready to use (iTunesDB isn't null)
 
 private:
     Itdb_iTunesDB *__iTunesDB; // Internal iTunesDB on iPod
