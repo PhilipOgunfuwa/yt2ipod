@@ -352,3 +352,7 @@ gboolean iPod::reset_gpod_error() {
     g_error_free(__gpod_error);
     return !__gpod_error;
 }
+
+gboolean iPod::ok() const { 
+    return __iTunesDB != NULL;
+}
